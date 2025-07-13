@@ -16,7 +16,7 @@ class TrimStrings extends TransformsRequest
     /**
      * The attributes that should not be trimmed.
      *
-     * @var array<int, string>
+     * @var array
      */
     protected $except = [
         //
@@ -53,7 +53,7 @@ class TrimStrings extends TransformsRequest
             return $value;
         }
 
-        return preg_replace('~^[\s\x{FEFF}\x{200B}]+|[\s\x{FEFF}\x{200B}]+$~u', '', $value) ?? trim($value);
+        return preg_replace('~^[\s﻿​]+|[\s﻿​]+$~u', '', $value) ?? trim($value);
     }
 
     /**
@@ -65,15 +65,5 @@ class TrimStrings extends TransformsRequest
     public static function skipWhen(Closure $callback)
     {
         static::$skipCallbacks[] = $callback;
-    }
-
-    /**
-     * Flush the middleware's global state.
-     *
-     * @return void
-     */
-    public static function flushState()
-    {
-        static::$skipCallbacks = [];
     }
 }

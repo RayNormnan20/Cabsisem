@@ -3,7 +3,7 @@
 /*
  * This file is part of Psy Shell.
  *
- * (c) 2012-2023 Justin Hileman
+ * (c) 2012-2022 Justin Hileman
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,7 +15,8 @@ use Psy\Formatter\DocblockFormatter;
 use Psy\Formatter\SignatureFormatter;
 use Psy\Input\CodeArgument;
 use Psy\Output\ShellOutput;
-use Psy\Reflection\ReflectionConstant;
+use Psy\Reflection\ReflectionClassConstant;
+use Psy\Reflection\ReflectionConstant_;
 use Psy\Reflection\ReflectionLanguageConstruct;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -62,7 +63,7 @@ HELP
      *
      * @return int 0 if everything went fine, or an exit code
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $value = $input->getArgument('target');
         if (ReflectionLanguageConstruct::isLanguageConstruct($value)) {
@@ -73,7 +74,7 @@ HELP
             $doc = $this->getManualDoc($reflector) ?: DocblockFormatter::format($reflector);
         }
 
-        $db = $this->getShell()->getManualDb();
+        $db = $this->getApplication()->getManualDb();
 
         if ($output instanceof ShellOutput) {
             $output->startPaging();
@@ -145,13 +146,14 @@ HELP
                 break;
 
             case \ReflectionClassConstant::class:
+            case ReflectionClassConstant::class:
                 // @todo this is going to collide with ReflectionMethod ids
                 // someday... start running the query by id + type if the DB
                 // supports it.
                 $id = $reflector->class.'::'.$reflector->name;
                 break;
 
-            case ReflectionConstant::class:
+            case ReflectionConstant_::class:
                 $id = $reflector->name;
                 break;
 
@@ -242,7 +244,7 @@ HELP
 
     private function getManualDocById($id)
     {
-        if ($db = $this->getShell()->getManualDb()) {
+        if ($db = $this->getApplication()->getManualDb()) {
             $result = $db->query(\sprintf('SELECT doc FROM php_manual WHERE id = %s', $db->quote($id)));
             if ($result !== false) {
                 return $result->fetchColumn(0);

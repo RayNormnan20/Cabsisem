@@ -4,7 +4,7 @@ namespace Illuminate\Mail\Transport;
 
 use Aws\Exception\AwsException;
 use Aws\Ses\SesClient;
-use Symfony\Component\Mailer\Exception\TransportException;
+use Exception;
 use Symfony\Component\Mailer\Header\MetadataHeader;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
@@ -75,7 +75,7 @@ class SesTransport extends AbstractTransport
         } catch (AwsException $e) {
             $reason = $e->getAwsErrorMessage() ?? $e->getMessage();
 
-            throw new TransportException(
+            throw new Exception(
                 sprintf('Request to AWS SES API failed. Reason: %s.', $reason),
                 is_int($e->getCode()) ? $e->getCode() : 0,
                 $e
@@ -86,6 +86,16 @@ class SesTransport extends AbstractTransport
 
         $message->getOriginalMessage()->getHeaders()->addHeader('X-Message-ID', $messageId);
         $message->getOriginalMessage()->getHeaders()->addHeader('X-SES-Message-ID', $messageId);
+    }
+
+    /**
+     * Get the string representation of the transport.
+     *
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return 'ses';
     }
 
     /**
@@ -117,15 +127,5 @@ class SesTransport extends AbstractTransport
     public function setOptions(array $options)
     {
         return $this->options = $options;
-    }
-
-    /**
-     * Get the string representation of the transport.
-     *
-     * @return string
-     */
-    public function __toString(): string
-    {
-        return 'ses';
     }
 }

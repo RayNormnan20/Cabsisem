@@ -97,7 +97,7 @@ final class FFICaster
         return [Caster::PREFIX_VIRTUAL.'returnType' => $returnType];
     }
 
-    private static function castFFIPointer(Stub $stub, CType $type, ?CData $data = null): array
+    private static function castFFIPointer(Stub $stub, CType $type, CData $data = null): array
     {
         $ptr = $type->getPointerType();
 
@@ -115,21 +115,11 @@ final class FFICaster
     private static function castFFIStringValue(CData $data): string|CutStub
     {
         $result = [];
-        $ffi = \FFI::cdef(<<<C
-            size_t zend_get_page_size(void);
-        C);
 
-        $pageSize = $ffi->zend_get_page_size();
-
-        // get cdata address
-        $start = $ffi->cast('uintptr_t', $ffi->cast('char*', $data))->cdata;
-        // accessing memory in the same page as $start is safe
-        $max = min(self::MAX_STRING_LENGTH, ($start | ($pageSize - 1)) - $start);
-
-        for ($i = 0; $i < $max; ++$i) {
+        for ($i = 0; $i < self::MAX_STRING_LENGTH; ++$i) {
             $result[$i] = $data[$i];
 
-            if ("\0" === $data[$i]) {
+            if ("\0" === $result[$i]) {
                 return implode('', $result);
             }
         }
@@ -142,7 +132,7 @@ final class FFICaster
         return $stub;
     }
 
-    private static function castFFIStructLike(CType $type, ?CData $data = null): array
+    private static function castFFIStructLike(CType $type, CData $data = null): array
     {
         $isUnion = ($type->getAttributes() & CType::ATTR_UNION) === CType::ATTR_UNION;
 

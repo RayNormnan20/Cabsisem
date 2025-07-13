@@ -3,13 +3,11 @@
 namespace Illuminate\Console;
 
 use Illuminate\Console\Concerns\CreatesMatchingTest;
-use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Finder\Finder;
 
-abstract class GeneratorCommand extends Command implements PromptsForMissingInput
+abstract class GeneratorCommand extends Command
 {
     /**
      * The filesystem instance.
@@ -84,7 +82,6 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
         'namespace',
         'new',
         'or',
-        'parent',
         'print',
         'private',
         'protected',
@@ -93,7 +90,6 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
         'require',
         'require_once',
         'return',
-        'self',
         'static',
         'switch',
         'throw',
@@ -188,10 +184,6 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
             }
         }
 
-        if (windows_os()) {
-            $path = str_replace('/', '\\', $path);
-        }
-
         $this->components->info(sprintf('%s [%s] created successfully.', $info, $path));
     }
 
@@ -239,42 +231,6 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
         return is_dir(app_path('Models'))
                     ? $rootNamespace.'Models\\'.$model
                     : $rootNamespace.$model;
-    }
-
-    /**
-     * Get a list of possible model names.
-     *
-     * @return array<int, string>
-     */
-    protected function possibleModels()
-    {
-        $modelPath = is_dir(app_path('Models')) ? app_path('Models') : app_path();
-
-        return collect(Finder::create()->files()->depth(0)->in($modelPath))
-            ->map(fn ($file) => $file->getBasename('.php'))
-            ->sort()
-            ->values()
-            ->all();
-    }
-
-    /**
-     * Get a list of possible event names.
-     *
-     * @return array<int, string>
-     */
-    protected function possibleEvents()
-    {
-        $eventPath = app_path('Events');
-
-        if (! is_dir($eventPath)) {
-            return [];
-        }
-
-        return collect(Finder::create()->files()->depth(0)->in($eventPath))
-            ->map(fn ($file) => $file->getBasename('.php'))
-            ->sort()
-            ->values()
-            ->all();
     }
 
     /**
@@ -454,12 +410,9 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
      */
     protected function isReservedName($name)
     {
-        return in_array(
-            strtolower($name),
-            collect($this->reservedNames)
-                ->transform(fn ($name) => strtolower($name))
-                ->all()
-        );
+        $name = strtolower($name);
+
+        return in_array($name, $this->reservedNames);
     }
 
     /**
@@ -483,47 +436,7 @@ abstract class GeneratorCommand extends Command implements PromptsForMissingInpu
     protected function getArguments()
     {
         return [
-            ['name', InputArgument::REQUIRED, 'The name of the '.strtolower($this->type)],
-        ];
-    }
-
-    /**
-     * Prompt for missing input arguments using the returned questions.
-     *
-     * @return array
-     */
-    protected function promptForMissingArgumentsUsing()
-    {
-        return [
-            'name' => [
-                'What should the '.strtolower($this->type).' be named?',
-                match ($this->type) {
-                    'Cast' => 'E.g. Json',
-                    'Channel' => 'E.g. OrderChannel',
-                    'Console command' => 'E.g. SendEmails',
-                    'Component' => 'E.g. Alert',
-                    'Controller' => 'E.g. UserController',
-                    'Event' => 'E.g. PodcastProcessed',
-                    'Exception' => 'E.g. InvalidOrderException',
-                    'Factory' => 'E.g. PostFactory',
-                    'Job' => 'E.g. ProcessPodcast',
-                    'Listener' => 'E.g. SendPodcastNotification',
-                    'Mailable' => 'E.g. OrderShipped',
-                    'Middleware' => 'E.g. EnsureTokenIsValid',
-                    'Model' => 'E.g. Flight',
-                    'Notification' => 'E.g. InvoicePaid',
-                    'Observer' => 'E.g. UserObserver',
-                    'Policy' => 'E.g. PostPolicy',
-                    'Provider' => 'E.g. ElasticServiceProvider',
-                    'Request' => 'E.g. StorePodcastRequest',
-                    'Resource' => 'E.g. UserResource',
-                    'Rule' => 'E.g. Uppercase',
-                    'Scope' => 'E.g. TrendingScope',
-                    'Seeder' => 'E.g. UserSeeder',
-                    'Test' => 'E.g. UserTest',
-                    default => '',
-                },
-            ],
+            ['name', InputArgument::REQUIRED, 'The name of the class'],
         ];
     }
 }

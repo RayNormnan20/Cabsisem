@@ -16,8 +16,6 @@ use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 use Throwable;
 
-use function Laravel\Prompts\suggest;
-
 #[AsCommand(name: 'docs')]
 class DocsCommand extends Command
 {
@@ -27,6 +25,17 @@ class DocsCommand extends Command
      * @var string
      */
     protected $signature = 'docs {page? : The documentation page to open} {section? : The section of the page to open}';
+
+    /**
+     * The name of the console command.
+     *
+     * This name is used to identify the command during lazy loading.
+     *
+     * @var string|null
+     *
+     * @deprecated
+     */
+    protected static $defaultName = 'docs';
 
     /**
      * The console command description.
@@ -40,7 +49,7 @@ class DocsCommand extends Command
      *
      * @var string
      */
-    protected $help = 'If you would like to perform a content search against the documentation, you may call: <fg=green>php artisan docs -- </><fg=green;options=bold;>search query here</>';
+    protected $help = 'If you would like to perform a content search against the documention, you may call: <fg=green>php artisan docs -- </><fg=green;options=bold;>search query here</>';
 
     /**
      * The HTTP client instance.
@@ -78,6 +87,21 @@ class DocsCommand extends Command
     protected $systemOsFamily = PHP_OS_FAMILY;
 
     /**
+     * Create a new command instance.
+     *
+     * @param  \Illuminate\Http\Client\Factory  $http
+     * @param  \Illuminate\Contracts\Cache\Repository  $cache
+     * @return void
+     */
+    public function __construct(Http $http, Cache $cache)
+    {
+        parent::__construct();
+
+        $this->http = $http;
+        $this->cache = $cache;
+    }
+
+    /**
      * Configure the current command.
      *
      * @return void
@@ -94,15 +118,10 @@ class DocsCommand extends Command
     /**
      * Execute the console command.
      *
-     * @param  \Illuminate\Http\Client\Factory  $http
-     * @param  \Illuminate\Contracts\Cache\Repository  $cache
      * @return int
      */
-    public function handle(Http $http, Cache $cache)
+    public function handle()
     {
-        $this->http = $http;
-        $this->cache = $cache;
-
         try {
             $this->openUrl();
         } catch (ProcessFailedException $e) {
@@ -171,7 +190,7 @@ class DocsCommand extends Command
     /**
      * Determine the page to open.
      *
-     * @return string|null
+     * @return ?string
      */
     protected function resolvePage()
     {
@@ -181,7 +200,7 @@ class DocsCommand extends Command
 
         return $this->didNotRequestPage()
             ? $this->askForPage()
-            : $this->guessPage($this->argument('page'));
+            : $this->guessPage();
     }
 
     /**
@@ -197,7 +216,7 @@ class DocsCommand extends Command
     /**
      * Ask the user which page they would like to open.
      *
-     * @return string|null
+     * @return ?string
      */
     protected function askForPage()
     {
@@ -207,13 +226,13 @@ class DocsCommand extends Command
     /**
      * Ask the user which page they would like to open via a custom strategy.
      *
-     * @return string|null
+     * @return ?string
      */
     protected function askForPageViaCustomStrategy()
     {
         try {
             $strategy = require Env::get('ARTISAN_DOCS_ASK_STRATEGY');
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             return null;
         }
 
@@ -227,47 +246,45 @@ class DocsCommand extends Command
     /**
      * Ask the user which page they would like to open using autocomplete.
      *
-     * @return string|null
+     * @return ?string
      */
     protected function askForPageViaAutocomplete()
     {
-        $choice = suggest(
-            label: 'Which page would you like to open?',
-            options: fn ($value) => $this->pages()
-                ->mapWithKeys(fn ($option) => [
-                    Str::lower($option['title']) => $option['title'],
-                ])
-                ->filter(fn ($title) => str_contains(Str::lower($title), Str::lower($value)))
-                ->all(),
-            placeholder: 'E.g. Collections'
+        $choice = $this->components->choice(
+            'Which page would you like to open?',
+            $this->pages()->mapWithKeys(fn ($option) => [
+                Str::lower($option['title']) => $option['title'],
+            ])->all(),
+            'installation',
+            3
         );
 
         return $this->pages()->filter(
             fn ($page) => $page['title'] === $choice || Str::lower($page['title']) === $choice
-        )->keys()->first() ?: $this->guessPage($choice);
+        )->keys()->first() ?: null;
     }
 
     /**
      * Guess the page the user is attempting to open.
      *
-     * @return string|null
+     * @return ?string
      */
-    protected function guessPage($search)
+    protected function guessPage()
     {
         return $this->pages()
             ->filter(fn ($page) => str_starts_with(
                 Str::slug($page['title'], ' '),
-                Str::slug($search, ' ')
+                Str::slug($this->argument('page'), ' ')
             ))->keys()->first() ?? $this->pages()->map(fn ($page) => similar_text(
                 Str::slug($page['title'], ' '),
-                Str::slug($search, ' '),
+                Str::slug($this->argument('page'), ' '),
             ))
-            ->filter(fn ($score) => $score >= min(3, Str::length($search)))
+            ->filter(fn ($score) => $score >= min(3, Str::length($this->argument('page'))))
             ->sortDesc()
             ->keys()
             ->sortByDesc(fn ($slug) => Str::contains(
                 Str::slug($this->pages()[$slug]['title'], ' '),
-                Str::slug($search, ' ')
+                Str::slug($this->argument('page'), ' ')
             ) ? 1 : 0)
             ->first();
     }
@@ -276,7 +293,7 @@ class DocsCommand extends Command
      * The section the user specifically asked to open.
      *
      * @param  string  $page
-     * @return string|null
+     * @return ?string
      */
     protected function section($page)
     {
@@ -299,7 +316,7 @@ class DocsCommand extends Command
      * Guess the section the user is attempting to open.
      *
      * @param  string  $page
-     * @return string|null
+     * @return ?string
      */
     protected function guessSection($page)
     {
@@ -350,7 +367,7 @@ class DocsCommand extends Command
     {
         try {
             $command = require Env::get('ARTISAN_DOCS_OPEN_STRATEGY');
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             $command = null;
         }
 
@@ -465,7 +482,7 @@ class DocsCommand extends Command
      */
     protected function version()
     {
-        return Str::before($this->version ?? $this->laravel->version(), '.').'.x';
+        return Str::before(($this->version ?? $this->laravel->version()), '.').'.x';
     }
 
     /**

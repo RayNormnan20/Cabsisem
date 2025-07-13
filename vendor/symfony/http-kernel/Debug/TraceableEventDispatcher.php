@@ -23,7 +23,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
  */
 class TraceableEventDispatcher extends BaseTraceableEventDispatcher
 {
-    protected function beforeDispatch(string $eventName, object $event): void
+    protected function beforeDispatch(string $eventName, object $event)
     {
         switch ($eventName) {
             case KernelEvents::REQUEST:
@@ -55,7 +55,7 @@ class TraceableEventDispatcher extends BaseTraceableEventDispatcher
         }
     }
 
-    protected function afterDispatch(string $eventName, object $event): void
+    protected function afterDispatch(string $eventName, object $event)
     {
         switch ($eventName) {
             case KernelEvents::CONTROLLER_ARGUMENTS:
@@ -66,11 +66,7 @@ class TraceableEventDispatcher extends BaseTraceableEventDispatcher
                 if (null === $sectionId) {
                     break;
                 }
-                try {
-                    $this->stopwatch->stopSection($sectionId);
-                } catch (\LogicException) {
-                    // The stop watch service might have been reset in the meantime
-                }
+                $this->stopwatch->stopSection($sectionId);
                 break;
             case KernelEvents::TERMINATE:
                 // In the special case described in the `preDispatch` method above, the `$token` section

@@ -3,7 +3,7 @@
 /*
  * This file is part of Psy Shell.
  *
- * (c) 2012-2023 Justin Hileman
+ * (c) 2012-2022 Justin Hileman
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -11,23 +11,22 @@
 
 namespace Psy\ExecutionLoop;
 
-use PhpParser\Parser;
 use Psy\Exception\ParseErrorException;
 use Psy\ParserFactory;
 use Psy\Shell;
 
 /**
  * A runkit-based code reloader, which is pretty much magic.
- *
- * @todo Remove RunkitReloader once we drop support for PHP 7.x :(
  */
 class RunkitReloader extends AbstractListener
 {
-    private Parser $parser;
-    private array $timestamps = [];
+    private $parser;
+    private $timestamps = [];
 
     /**
      * Only enabled if Runkit is installed.
+     *
+     * @return bool
      */
     public static function isSupported(): bool
     {
@@ -37,10 +36,13 @@ class RunkitReloader extends AbstractListener
 
     /**
      * Construct a Runkit Reloader.
+     *
+     * @todo Pass in Parser Factory instance for dependency injection?
      */
     public function __construct()
     {
-        $this->parser = (new ParserFactory())->createParser();
+        $parserFactory = new ParserFactory();
+        $this->parser = $parserFactory->createParser();
     }
 
     /**
@@ -125,6 +127,8 @@ class RunkitReloader extends AbstractListener
      * Use PHP-Parser to ensure that the file is valid PHP.
      *
      * @param string $file
+     *
+     * @return bool
      */
     private function lintFile(string $file): bool
     {

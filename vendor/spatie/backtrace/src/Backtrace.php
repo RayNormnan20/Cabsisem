@@ -3,10 +3,6 @@
 namespace Spatie\Backtrace;
 
 use Closure;
-use Laravel\SerializableClosure\Support\ClosureStream;
-use Spatie\Backtrace\Arguments\ArgumentReducers;
-use Spatie\Backtrace\Arguments\ReduceArgumentsAction;
-use Spatie\Backtrace\Arguments\Reducers\ArgumentReducer;
 use Throwable;
 
 class Backtrace
@@ -15,16 +11,7 @@ class Backtrace
     protected $withArguments = false;
 
     /** @var bool */
-    protected $reduceArguments = false;
-
-    /** @var array<class-string<ArgumentReducer>|ArgumentReducer>|ArgumentReducers|null */
-    protected $argumentReducers = null;
-
-    /** @var bool */
     protected $withObject = false;
-
-    /** @var bool */
-    protected $trimFilePaths = false;
 
     /** @var string|null */
     protected $applicationPath;
@@ -58,45 +45,23 @@ class Backtrace
         return $this;
     }
 
-    public function withArguments(
-        bool $withArguments = true
-    ): self {
-        $this->withArguments = $withArguments;
-
-        return $this;
-    }
-
-    /**
-     * @param array<class-string<ArgumentReducer>|ArgumentReducer>|ArgumentReducers|null $argumentReducers
-     *
-     * @return $this
-     */
-    public function reduceArguments(
-        $argumentReducers = null
-    ): self {
-        $this->reduceArguments = true;
-        $this->argumentReducers = $argumentReducers;
-
-        return $this;
-    }
-
-    public function withObject(bool $withObject = true): self
+    public function withArguments(): self
     {
-        $this->withObject = $withObject;
+        $this->withArguments = true;
+
+        return $this;
+    }
+
+    public function withObject(): self
+    {
+        $this->withObject = true;
 
         return $this;
     }
 
     public function applicationPath(string $applicationPath): self
     {
-        $this->applicationPath = rtrim($applicationPath, '/');
-
-        return $this;
-    }
-
-    public function trimFilePaths(): self
-    {
-        $this->trimFilePaths = true;
+        $this->applicationPath = $applicationPath;
 
         return $this;
     }
@@ -149,16 +114,13 @@ class Backtrace
             return $this->throwable->getTrace();
         }
 
-        // Omit arguments and object
-        $options = DEBUG_BACKTRACE_IGNORE_ARGS;
+        $options = null;
 
-        // Populate arguments
-        if ($this->withArguments) {
-            $options = 0;
+        if (! $this->withArguments) {
+            $options = $options | DEBUG_BACKTRACE_IGNORE_ARGS;
         }
 
-        // Populate object
-        if ($this->withObject) {
+        if ($this->withObject()) {
             $options = $options | DEBUG_BACKTRACE_PROVIDE_OBJECT;
         }
 
@@ -178,52 +140,18 @@ class Backtrace
     {
         $currentFile = $this->throwable ? $this->throwable->getFile() : '';
         $currentLine = $this->throwable ? $this->throwable->getLine() : 0;
-        $arguments = $this->withArguments ? [] : null;
 
         $frames = [];
 
-        $reduceArgumentsAction = new ReduceArgumentsAction($this->resolveArgumentReducers());
-
         foreach ($rawFrames as $rawFrame) {
-            $textSnippet = null;
-
-            if (
-                class_exists(ClosureStream::class)
-                && substr($currentFile, 0, strlen(ClosureStream::STREAM_PROTO)) === ClosureStream::STREAM_PROTO
-            ) {
-                $textSnippet = $currentFile;
-                $currentFile = ClosureStream::STREAM_PROTO.'://function()';
-                $currentLine -= 1;
-            }
-
-            if ($this->trimFilePaths && $this->applicationPath) {
-                $trimmedFilePath = str_replace($this->applicationPath, '', $currentFile);
-            }
-            $frame = new Frame(
+            $frames[] = new Frame(
                 $currentFile,
                 $currentLine,
-                $arguments,
+                $rawFrame['args'] ?? null,
                 $rawFrame['function'] ?? null,
                 $rawFrame['class'] ?? null,
-                $rawFrame['object'] ?? null,
-                $this->isApplicationFrame($currentFile),
-                $textSnippet,
-                $trimmedFilePath ?? null,
+                $this->isApplicationFrame($currentFile)
             );
-
-            $frames[] = $frame;
-
-            $arguments = $this->withArguments
-                ? $rawFrame['args'] ?? null
-                : null;
-
-            if ($this->reduceArguments) {
-                $arguments = $reduceArgumentsAction->execute(
-                    $rawFrame['class'] ?? null,
-                    $rawFrame['function'] ?? null,
-                    $arguments
-                );
-            }
 
             $currentFile = $rawFrame['file'] ?? 'unknown';
             $currentLine = $rawFrame['line'] ?? 0;
@@ -254,7 +182,7 @@ class Backtrace
             $relativeFile = array_reverse(explode($this->applicationPath ?? '', $frameFilename, 2))[0];
         }
 
-        if (strpos($relativeFile, DIRECTORY_SEPARATOR.'vendor') === 0) {
+        if (strpos($relativeFile, DIRECTORY_SEPARATOR . 'vendor') === 0) {
             return false;
         }
 
@@ -287,18 +215,5 @@ class Backtrace
         }
 
         return $frames;
-    }
-
-    protected function resolveArgumentReducers(): ArgumentReducers
-    {
-        if ($this->argumentReducers === null) {
-            return ArgumentReducers::default();
-        }
-
-        if ($this->argumentReducers instanceof ArgumentReducers) {
-            return $this->argumentReducers;
-        }
-
-        return ArgumentReducers::create($this->argumentReducers);
     }
 }

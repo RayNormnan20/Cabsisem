@@ -14,7 +14,7 @@ namespace Symfony\Component\VarDumper\Caster;
 use Symfony\Component\VarDumper\Cloner\Stub;
 
 /**
- * Casts pgsql resources to array representation.
+ * Casts pqsql resources to array representation.
  *
  * @author Nicolas Grekas <p@tchwork.com>
  *
@@ -69,9 +69,6 @@ class PgSqlCaster
         'function' => \PGSQL_DIAG_SOURCE_FUNCTION,
     ];
 
-    /**
-     * @return array
-     */
     public static function castLargeObject($lo, array $a, Stub $stub, bool $isNested)
     {
         $a['seek position'] = pg_lo_tell($lo);
@@ -79,9 +76,6 @@ class PgSqlCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
     public static function castLink($link, array $a, Stub $stub, bool $isNested)
     {
         $a['status'] = pg_connection_status($link);
@@ -114,9 +108,6 @@ class PgSqlCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
     public static function castResult($result, array $a, Stub $stub, bool $isNested)
     {
         $a['num rows'] = pg_num_rows($result);
@@ -142,9 +133,9 @@ class PgSqlCaster
                 'name' => pg_field_name($result, $i),
                 'table' => sprintf('%s (OID: %s)', pg_field_table($result, $i), pg_field_table($result, $i, true)),
                 'type' => sprintf('%s (OID: %s)', pg_field_type($result, $i), pg_field_type_oid($result, $i)),
-                'nullable' => (bool) (\PHP_VERSION_ID >= 80300 ? pg_field_is_null($result, null, $i) : pg_field_is_null($result, $i)),
+                'nullable' => (bool) pg_field_is_null($result, $i),
                 'storage' => pg_field_size($result, $i).' bytes',
-                'display' => (\PHP_VERSION_ID >= 80300 ? pg_field_prtlen($result, null, $i) : pg_field_prtlen($result, $i)).' chars',
+                'display' => pg_field_prtlen($result, $i).' chars',
             ];
             if (' (OID: )' === $field['table']) {
                 $field['table'] = null;

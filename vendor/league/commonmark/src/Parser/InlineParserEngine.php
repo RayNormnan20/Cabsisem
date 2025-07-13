@@ -36,8 +36,8 @@ final class InlineParserEngine implements InlineParserEngineInterface
 
     /**
      * @var array<int, InlineParserInterface|string|bool>
-     * @psalm-var list<array{0: InlineParserInterface, 1: non-empty-string, 2: bool}>
-     * @phpstan-var array<int, array{0: InlineParserInterface, 1: non-empty-string, 2: bool}>
+     * @psalm-var list<array{0: InlineParserInterface, 1: string, 2: bool}>
+     * @phpstan-var array<int, array{0: InlineParserInterface, 1: string, 2: bool}>
      */
     private array $parsers = [];
 
@@ -59,7 +59,7 @@ final class InlineParserEngine implements InlineParserEngineInterface
         $contents = \trim($contents);
         $cursor   = new Cursor($contents);
 
-        $inlineParserContext = new InlineParserContext($cursor, $block, $this->referenceMap, $this->environment->getConfiguration()->get('max_delimiters_per_line'));
+        $inlineParserContext = new InlineParserContext($cursor, $block, $this->referenceMap);
 
         // Have all parsers look at the line to determine what they might want to parse and what positions they exist at
         foreach ($this->matchParsers($contents) as $matchPosition => $parsers) {
@@ -134,7 +134,7 @@ final class InlineParserEngine implements InlineParserEngineInterface
     private function matchParsers(string $contents): array
     {
         $contents    = \trim($contents);
-        $isMultibyte = ! \mb_check_encoding($contents, 'ASCII');
+        $isMultibyte = \mb_strlen($contents, 'UTF-8') !== \strlen($contents);
 
         $ret = [];
 

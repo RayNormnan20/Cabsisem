@@ -6,11 +6,7 @@ use Illuminate\Console\Concerns\CreatesMatchingTest;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-use function Laravel\Prompts\suggest;
 
 #[AsCommand(name: 'make:listener')]
 class ListenerMakeCommand extends GeneratorCommand
@@ -23,6 +19,17 @@ class ListenerMakeCommand extends GeneratorCommand
      * @var string
      */
     protected $name = 'make:listener';
+
+    /**
+     * The name of the console command.
+     *
+     * This name is used to identify the command during lazy loading.
+     *
+     * @var string|null
+     *
+     * @deprecated
+     */
+    protected static $defaultName = 'make:listener';
 
     /**
      * The console command description.
@@ -46,7 +53,7 @@ class ListenerMakeCommand extends GeneratorCommand
      */
     protected function buildClass($name)
     {
-        $event = $this->option('event') ?? '';
+        $event = $this->option('event');
 
         if (! Str::startsWith($event, [
             $this->laravel->getNamespace(),
@@ -117,28 +124,5 @@ class ListenerMakeCommand extends GeneratorCommand
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the listener already exists'],
             ['queued', null, InputOption::VALUE_NONE, 'Indicates the event listener should be queued'],
         ];
-    }
-
-    /**
-     * Interact further with the user if they were prompted for missing arguments.
-     *
-     * @param  \Symfony\Component\Console\Input\InputInterface  $input
-     * @param  \Symfony\Component\Console\Output\OutputInterface  $output
-     * @return void
-     */
-    protected function afterPromptingForMissingArguments(InputInterface $input, OutputInterface $output)
-    {
-        if ($this->isReservedName($this->getNameInput()) || $this->didReceiveOptions($input)) {
-            return;
-        }
-
-        $event = suggest(
-            'What event should be listened for? (Optional)',
-            $this->possibleEvents(),
-        );
-
-        if ($event) {
-            $input->setOption('event', $event);
-        }
     }
 }

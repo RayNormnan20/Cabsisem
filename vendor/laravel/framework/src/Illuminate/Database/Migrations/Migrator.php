@@ -2,7 +2,6 @@
 
 namespace Illuminate\Database\Migrations;
 
-use Closure;
 use Doctrine\DBAL\Schema\SchemaException;
 use Illuminate\Console\View\Components\BulletList;
 use Illuminate\Console\View\Components\Error;
@@ -54,13 +53,6 @@ class Migrator
     protected $resolver;
 
     /**
-     * The custom connection resolver callback.
-     *
-     * @var \Closure|null
-     */
-    protected static $connectionResolverCallback;
-
-    /**
      * The name of the default connection.
      *
      * @var string
@@ -73,13 +65,6 @@ class Migrator
      * @var array
      */
     protected $paths = [];
-
-    /**
-     * The paths that have already been required.
-     *
-     * @var array<string, \Illuminate\Database\Migrations\Migration|null>
-     */
-    protected static $requiredPathCache = [];
 
     /**
      * The output interface implementation.
@@ -100,7 +85,7 @@ class Migrator
     public function __construct(MigrationRepositoryInterface $repository,
                                 Resolver $resolver,
                                 Filesystem $files,
-                                ?Dispatcher $dispatcher = null)
+                                Dispatcher $dispatcher = null)
     {
         $this->files = $files;
         $this->events = $dispatcher;
@@ -270,10 +255,6 @@ class Migrator
             return $this->repository->getMigrations($steps);
         }
 
-        if (($batch = $options['batch'] ?? 0) > 0) {
-            return $this->repository->getMigrationsByBatch($batch);
-        }
-
         return $this->repository->getLast();
     }
 
@@ -340,7 +321,7 @@ class Migrator
             return [];
         }
 
-        return tap($this->resetMigrations($migrations, Arr::wrap($paths), $pretend), function () {
+        return tap($this->resetMigrations($migrations, $paths, $pretend), function () {
             if ($this->output) {
                 $this->output->writeln('');
             }
@@ -446,11 +427,10 @@ class Migrator
             }
 
             $this->write(TwoColumnDetail::class, $name);
-
             $this->write(BulletList::class, collect($this->getQueries($migration, $method))->map(function ($query) {
                 return $query['query'];
             }));
-        } catch (SchemaException) {
+        } catch (SchemaException $e) {
             $name = get_class($migration);
 
             $this->write(Error::class, sprintf(
@@ -531,15 +511,9 @@ class Migrator
             return new $class;
         }
 
-        $migration = static::$requiredPathCache[$path] ??= $this->files->getRequire($path);
+        $migration = $this->files->getRequire($path);
 
-        if (is_object($migration)) {
-            return method_exists($migration, '__construct')
-                    ? $this->files->getRequire($path)
-                    : clone $migration;
-        }
-
-        return new $class;
+        return is_object($migration) ? $migration : new $class;
     }
 
     /**
@@ -668,26 +642,7 @@ class Migrator
      */
     public function resolveConnection($connection)
     {
-        if (static::$connectionResolverCallback) {
-            return call_user_func(
-                static::$connectionResolverCallback,
-                $this->resolver,
-                $connection ?: $this->connection
-            );
-        } else {
-            return $this->resolver->connection($connection ?: $this->connection);
-        }
-    }
-
-    /**
-     * Set a connection resolver callback.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function resolveConnectionsUsing(Closure $callback)
-    {
-        static::$connectionResolverCallback = $callback;
+        return $this->resolver->connection($connection ?: $this->connection);
     }
 
     /**
@@ -744,7 +699,7 @@ class Migrator
      */
     public function deleteRepository()
     {
-        $this->repository->deleteRepository();
+        return $this->repository->deleteRepository();
     }
 
     /**
@@ -774,7 +729,7 @@ class Migrator
      * Write to the console's output.
      *
      * @param  string  $component
-     * @param  array<int, string>|string  ...$arguments
+     * @param  array<int, string>|string  $arguments
      * @return void
      */
     protected function write($component, ...$arguments)

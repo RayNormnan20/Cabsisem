@@ -22,7 +22,8 @@ use Illuminate\Support\Traits\Macroable;
  */
 class Repository implements ArrayAccess, CacheContract
 {
-    use InteractsWithTime, Macroable {
+    use InteractsWithTime;
+    use Macroable {
         __call as macroCall;
     }
 
@@ -61,7 +62,7 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Determine if an item exists in the cache.
      *
-     * @param  array|string  $key
+     * @param  string  $key
      * @return bool
      */
     public function has($key): bool
@@ -83,11 +84,9 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Retrieve an item from the cache by key.
      *
-     * @template TCacheValue
-     *
      * @param  array|string  $key
-     * @param  TCacheValue|(\Closure(): TCacheValue)  $default
-     * @return (TCacheValue is null ? mixed : TCacheValue)
+     * @param  mixed  $default
+     * @return mixed
      */
     public function get($key, $default = null): mixed
     {
@@ -162,7 +161,7 @@ class Repository implements ArrayAccess, CacheContract
         if (is_null($value)) {
             $this->event(new CacheMissed($key));
 
-            return (isset($keys[$key]) && ! array_is_list($keys)) ? value($keys[$key]) : null;
+            return isset($keys[$key]) ? value($keys[$key]) : null;
         }
 
         // If we found a valid value we will fire the "hit" event and return the value
@@ -176,11 +175,9 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Retrieve an item from the cache and delete it.
      *
-     * @template TCacheValue
-     *
-     * @param  array|string  $key
-     * @param  TCacheValue|(\Closure(): TCacheValue)  $default
-     * @return (TCacheValue is null ? mixed : TCacheValue)
+     * @param  string  $key
+     * @param  mixed  $default
+     * @return mixed
      */
     public function pull($key, $default = null)
     {
@@ -375,12 +372,10 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Get an item from the cache, or execute the given Closure and store the result.
      *
-     * @template TCacheValue
-     *
      * @param  string  $key
      * @param  \Closure|\DateTimeInterface|\DateInterval|int|null  $ttl
-     * @param  \Closure(): TCacheValue  $callback
-     * @return TCacheValue
+     * @param  \Closure  $callback
+     * @return mixed
      */
     public function remember($key, $ttl, Closure $callback)
     {
@@ -393,9 +388,7 @@ class Repository implements ArrayAccess, CacheContract
             return $value;
         }
 
-        $value = $callback();
-
-        $this->put($key, $value, value($ttl, $value));
+        $this->put($key, $value = $callback(), value($ttl));
 
         return $value;
     }
@@ -403,11 +396,9 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Get an item from the cache, or execute the given Closure and store the result forever.
      *
-     * @template TCacheValue
-     *
      * @param  string  $key
-     * @param  \Closure(): TCacheValue  $callback
-     * @return TCacheValue
+     * @param  \Closure  $callback
+     * @return mixed
      */
     public function sear($key, Closure $callback)
     {
@@ -417,11 +408,9 @@ class Repository implements ArrayAccess, CacheContract
     /**
      * Get an item from the cache, or execute the given Closure and store the result forever.
      *
-     * @template TCacheValue
-     *
      * @param  string  $key
-     * @param  \Closure(): TCacheValue  $callback
-     * @return TCacheValue
+     * @param  \Closure  $callback
+     * @return mixed
      */
     public function rememberForever($key, Closure $callback)
     {
@@ -584,19 +573,6 @@ class Repository implements ArrayAccess, CacheContract
     public function getStore()
     {
         return $this->store;
-    }
-
-    /**
-     * Set the cache store implementation.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @return static
-     */
-    public function setStore($store)
-    {
-        $this->store = $store;
-
-        return $this;
     }
 
     /**

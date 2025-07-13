@@ -93,7 +93,7 @@ trait ConditionallyLoadsAttributes
     }
 
     /**
-     * Retrieve a value if the given "condition" is truthy.
+     * Retrieve a value based on a given condition.
      *
      * @param  bool  $condition
      * @param  mixed  $value
@@ -107,21 +107,6 @@ trait ConditionallyLoadsAttributes
         }
 
         return func_num_args() === 3 ? value($default) : new MissingValue;
-    }
-
-    /**
-     * Retrieve a value if the given "condition" is falsy.
-     *
-     * @param  bool  $condition
-     * @param  mixed  $value
-     * @param  mixed  $default
-     * @return \Illuminate\Http\Resources\MissingValue|mixed
-     */
-    public function unless($condition, $value, $default = null)
-    {
-        $arguments = func_num_args() === 2 ? [$value] : [$value, $default];
-
-        return $this->when(! $condition, ...$arguments);
     }
 
     /**
@@ -140,16 +125,11 @@ trait ConditionallyLoadsAttributes
      *
      * @param  bool  $condition
      * @param  mixed  $value
-     * @param  mixed  $default
      * @return \Illuminate\Http\Resources\MergeValue|mixed
      */
-    protected function mergeWhen($condition, $value, $default = null)
+    protected function mergeWhen($condition, $value)
     {
-        if ($condition) {
-            return new MergeValue(value($value));
-        }
-
-        return func_num_args() === 3 ? new MergeValue(value($default)) : new MissingValue();
+        return $condition ? new MergeValue(value($value)) : new MissingValue;
     }
 
     /**
@@ -157,14 +137,11 @@ trait ConditionallyLoadsAttributes
      *
      * @param  bool  $condition
      * @param  mixed  $value
-     * @param  mixed  $default
      * @return \Illuminate\Http\Resources\MergeValue|mixed
      */
-    protected function mergeUnless($condition, $value, $default = null)
+    protected function mergeUnless($condition, $value)
     {
-        $arguments = func_num_args() === 2 ? [$value] : [$value, $default];
-
-        return $this->mergeWhen(! $condition, ...$arguments);
+        return ! $condition ? new MergeValue(value($value)) : new MissingValue;
     }
 
     /**
@@ -178,29 +155,6 @@ trait ConditionallyLoadsAttributes
         return new MergeValue(
             Arr::only($this->resource->toArray(), $attributes)
         );
-    }
-
-    /**
-     * Retrieve an attribute if it exists on the resource.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $default
-     * @return \Illuminate\Http\Resources\MissingValue|mixed
-     */
-    public function whenHas($attribute, $value = null, $default = null)
-    {
-        if (func_num_args() < 3) {
-            $default = new MissingValue;
-        }
-
-        if (! array_key_exists($attribute, $this->resource->getAttributes())) {
-            return value($default);
-        }
-
-        return func_num_args() === 1
-                ? $this->resource->{$attribute}
-                : value($value, $this->resource->{$attribute});
     }
 
     /**
@@ -266,17 +220,15 @@ trait ConditionallyLoadsAttributes
             return value($default);
         }
 
-        $loadedValue = $this->resource->{$relationship};
-
         if (func_num_args() === 1) {
-            return $loadedValue;
+            return $this->resource->{$relationship};
         }
 
-        if ($loadedValue === null) {
+        if ($this->resource->{$relationship} === null) {
             return;
         }
 
-        return value($value, $loadedValue);
+        return value($value);
     }
 
     /**
@@ -290,7 +242,7 @@ trait ConditionallyLoadsAttributes
     public function whenCounted($relationship, $value = null, $default = null)
     {
         if (func_num_args() < 3) {
-            $default = new MissingValue;
+            $default = new MissingValue();
         }
 
         $attribute = (string) Str::of($relationship)->snake()->finish('_count');
@@ -300,39 +252,6 @@ trait ConditionallyLoadsAttributes
         }
 
         if (func_num_args() === 1) {
-            return $this->resource->{$attribute};
-        }
-
-        if ($this->resource->{$attribute} === null) {
-            return;
-        }
-
-        return value($value, $this->resource->{$attribute});
-    }
-
-    /**
-     * Retrieve a relationship aggregated value if it exists.
-     *
-     * @param  string  $relationship
-     * @param  string  $column
-     * @param  string  $aggregate
-     * @param  mixed  $value
-     * @param  mixed  $default
-     * @return \Illuminate\Http\Resources\MissingValue|mixed
-     */
-    public function whenAggregated($relationship, $column, $aggregate, $value = null, $default = null)
-    {
-        if (func_num_args() < 5) {
-            $default = new MissingValue;
-        }
-
-        $attribute = (string) Str::of($relationship)->snake()->append('_')->append($aggregate)->append('_')->finish($column);
-
-        if (! isset($this->resource->getAttributes()[$attribute])) {
-            return value($default);
-        }
-
-        if (func_num_args() === 3) {
             return $this->resource->{$attribute};
         }
 
@@ -372,34 +291,11 @@ trait ConditionallyLoadsAttributes
         }
 
         return $this->when(
-            $this->hasPivotLoadedAs($accessor, $table),
+            isset($this->resource->$accessor) &&
+            ($this->resource->$accessor instanceof $table ||
+            $this->resource->$accessor->getTable() === $table),
             ...[$value, $default]
         );
-    }
-
-    /**
-     * Determine if the resource has the specified pivot table loaded.
-     *
-     * @param  string  $table
-     * @return bool
-     */
-    protected function hasPivotLoaded($table)
-    {
-        return $this->hasPivotLoadedAs('pivot', $table);
-    }
-
-    /**
-     * Determine if the resource has the specified pivot table loaded with a custom accessor.
-     *
-     * @param  string  $accessor
-     * @param  string  $table
-     * @return bool
-     */
-    protected function hasPivotLoadedAs($accessor, $table)
-    {
-        return isset($this->resource->$accessor) &&
-            ($this->resource->$accessor instanceof $table ||
-            $this->resource->$accessor->getTable() === $table);
     }
 
     /**

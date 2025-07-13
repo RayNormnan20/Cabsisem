@@ -1,0 +1,61 @@
+
+
+
+/*
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::table('users', function (Blueprint $table) {
+            // Campos para autenticación
+           // $table->string('creation_token')->nullable()->after('password');
+          //  $table->string('type')->default('db')->after('creation_token');
+            //$table->string('oidc_username')->nullable()->after('type');
+           // $table->string('oidc_sub')->nullable()->after('oidc_username');
+            
+            // Campos para vendedores
+            $table->boolean('is_vendedor')->default(false)->after('oidc_sub');
+            $table->unsignedBigInteger('vendedor_id')->nullable()->after('is_vendedor');
+            $table->date('fecha_ingreso')->nullable()->after('vendedor_id');
+            $table->date('fecha_egreso')->nullable()->after('fecha_ingreso');
+            $table->decimal('comision', 5, 2)->nullable()->after('fecha_egreso');
+            $table->text('perfil')->nullable()->after('comision');
+            
+            
+        });
+
+        // Foreign key en operación separada
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('vendedor_id')
+                  ->references('id')
+                  ->on('vendedores')
+                  ->onDelete('set null');
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['vendedor_id']);
+            
+            $table->dropColumn([
+                'creation_token',
+                'type',
+                'oidc_username',
+                'oidc_sub',
+                'is_vendedor',
+                'vendedor_id',
+                'fecha_ingreso',
+                'fecha_egreso',
+                'comision',
+                'perfil',
+               // 'deleted_at'
+            ]);
+        });
+    }
+};
+*/

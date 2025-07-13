@@ -13,7 +13,7 @@ trait GuardHelpers
     /**
      * The currently authenticated user.
      *
-     * @var \Illuminate\Contracts\Auth\Authenticatable|null
+     * @var \Illuminate\Contracts\Auth\Authenticatable
      */
     protected $user;
 
@@ -33,7 +33,11 @@ trait GuardHelpers
      */
     public function authenticate()
     {
-        return $this->user() ?? throw new AuthenticationException;
+        if (! is_null($user = $this->user())) {
+            return $user;
+        }
+
+        throw new AuthenticationException;
     }
 
     /**

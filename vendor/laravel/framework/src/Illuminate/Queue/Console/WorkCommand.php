@@ -2,7 +2,6 @@
 
 namespace Illuminate\Queue\Console;
 
-use Carbon\CarbonInterval;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Queue\Job;
@@ -15,7 +14,6 @@ use Illuminate\Queue\WorkerOptions;
 use Illuminate\Support\Carbon;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Terminal;
-
 use function Termwind\terminal;
 
 #[AsCommand(name: 'queue:work')]
@@ -43,6 +41,17 @@ class WorkCommand extends Command
                             {--rest=0 : Number of seconds to rest between jobs}
                             {--timeout=60 : The number of seconds a child process can run}
                             {--tries=1 : Number of times to attempt a job before logging it failed}';
+
+    /**
+     * The name of the console command.
+     *
+     * This name is used to identify the command during lazy loading.
+     *
+     * @var string|null
+     *
+     * @deprecated
+     */
+    protected static $defaultName = 'queue:work';
 
     /**
      * The console command description.
@@ -198,7 +207,7 @@ class WorkCommand extends Command
     {
         $this->output->write(sprintf(
             '  <fg=gray>%s</> %s%s',
-            $this->now()->format('Y-m-d H:i:s'),
+            Carbon::now()->format('Y-m-d H:i:s'),
             $job->resolveName(),
             $this->output->isVerbose()
                 ? sprintf(' <fg=gray>%s</>', $job->getJobId())
@@ -217,7 +226,7 @@ class WorkCommand extends Command
             return $this->output->writeln(' <fg=yellow;options=bold>RUNNING</>');
         }
 
-        $runTime = $this->formatRunTime($this->latestStartedAt);
+        $runTime = number_format((microtime(true) - $this->latestStartedAt) * 1000, 2).'ms';
 
         $dots = max(terminal()->width() - mb_strlen($job->resolveName()) - (
             $this->output->isVerbose() ? (mb_strlen($job->getJobId()) + 1) : 0
@@ -231,38 +240,6 @@ class WorkCommand extends Command
             'released_after_exception' => ' <fg=yellow;options=bold>FAIL</>',
             default => ' <fg=red;options=bold>FAIL</>',
         });
-    }
-
-    /**
-     * Get the current date / time.
-     *
-     * @return \Illuminate\Support\Carbon
-     */
-    protected function now()
-    {
-        $queueTimezone = $this->laravel['config']->get('queue.output_timezone');
-
-        if ($queueTimezone &&
-            $queueTimezone !== $this->laravel['config']->get('app.timezone')) {
-            return Carbon::now()->setTimezone($queueTimezone);
-        }
-
-        return Carbon::now();
-    }
-
-    /**
-     * Given a start time, format the total run time for human readability.
-     *
-     * @param  float  $startTime
-     * @return string
-     */
-    protected function formatRunTime($startTime)
-    {
-        $runTime = (microtime(true) - $startTime) * 1000;
-
-        return $runTime > 1000
-            ? CarbonInterval::milliseconds($runTime)->cascade()->forHumans(short: true)
-            : number_format($runTime, 2).'ms';
     }
 
     /**

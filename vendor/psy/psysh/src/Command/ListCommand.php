@@ -3,7 +3,7 @@
 /*
  * This file is part of Psy Shell.
  *
- * (c) 2012-2023 Justin Hileman
+ * (c) 2012-2022 Justin Hileman
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -26,6 +26,7 @@ use Psy\Output\ShellOutput;
 use Psy\VarDumper\Presenter;
 use Psy\VarDumper\PresenterAware;
 use Symfony\Component\Console\Formatter\OutputFormatter;
+use Symfony\Component\Console\Helper\TableHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -35,8 +36,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ListCommand extends ReflectingCommand implements PresenterAware
 {
-    protected Presenter $presenter;
-    protected array $enumerators;
+    protected $presenter;
+    protected $enumerators;
 
     /**
      * PresenterAware interface.
@@ -114,7 +115,7 @@ HELP
      *
      * @return int 0 if everything went fine, or an exit code
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->validateInput($input);
         $this->initEnumerators();
@@ -212,7 +213,11 @@ HELP
                 $table->addRow([$this->formatItemName($item), $item['value']]);
             }
 
-            $table->render();
+            if ($table instanceof TableHelper) {
+                $table->render($output);
+            } else {
+                $table->render();
+            }
         }
     }
 
@@ -220,6 +225,8 @@ HELP
      * Format an item name given its visibility.
      *
      * @param array $item
+     *
+     * @return string
      */
     private function formatItemName(array $item): string
     {

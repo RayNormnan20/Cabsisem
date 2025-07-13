@@ -2,7 +2,6 @@
 
 namespace Illuminate\Mail;
 
-use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Contracts\Mail\Attachable;
@@ -323,11 +322,17 @@ class Mailable implements MailableContract, Renderable
      */
     protected function buildMarkdownView()
     {
+        $markdown = Container::getInstance()->make(Markdown::class);
+
+        if (isset($this->theme)) {
+            $markdown->theme($this->theme);
+        }
+
         $data = $this->buildViewData();
 
         return [
-            'html' => $this->buildMarkdownHtml($data),
-            'text' => $this->buildMarkdownText($data),
+            'html' => $markdown->render($this->markdown, $data),
+            'text' => $this->buildMarkdownText($markdown, $data),
         ];
     }
 
@@ -347,7 +352,7 @@ class Mailable implements MailableContract, Renderable
         }
 
         foreach ((new ReflectionClass($this))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-            if ($property->isInitialized($this) && $property->getDeclaringClass()->getName() !== self::class) {
+            if ($property->getDeclaringClass()->getName() !== self::class) {
                 $data[$property->getName()] = $property->getValue($this);
             }
         }
@@ -356,53 +361,16 @@ class Mailable implements MailableContract, Renderable
     }
 
     /**
-     * Build the HTML view for a Markdown message.
-     *
-     * @param  array  $viewData
-     * @return \Closure
-     */
-    protected function buildMarkdownHtml($viewData)
-    {
-        return fn ($data) => $this->markdownRenderer()->render(
-            $this->markdown,
-            array_merge($data, $viewData),
-        );
-    }
-
-    /**
      * Build the text view for a Markdown message.
      *
-     * @param  array  $viewData
-     * @return \Closure
+     * @param  \Illuminate\Mail\Markdown  $markdown
+     * @param  array  $data
+     * @return string
      */
-    protected function buildMarkdownText($viewData)
+    protected function buildMarkdownText($markdown, $data)
     {
-        return function ($data) use ($viewData) {
-            if (isset($data['message'])) {
-                $data = array_merge($data, [
-                    'message' => new TextMessage($data['message']),
-                ]);
-            }
-
-            return $this->textView ?? $this->markdownRenderer()->renderText(
-                $this->markdown,
-                array_merge($data, $viewData)
-            );
-        };
-    }
-
-    /**
-     * Resolves a Markdown instance with the mail's theme.
-     *
-     * @return \Illuminate\Mail\Markdown
-     */
-    protected function markdownRenderer()
-    {
-        return tap(Container::getInstance()->make(Markdown::class), function ($markdown) {
-            $markdown->theme($this->theme ?: Container::getInstance()->get(ConfigRepository::class)->get(
-                'mail.markdown.theme', 'default')
-            );
-        });
+        return $this->textView
+                ?? $markdown->renderText($this->markdown, $data);
     }
 
     /**
@@ -727,9 +695,7 @@ class Mailable implements MailableContract, Renderable
         }
 
         $this->{$property} = collect($this->{$property})
-            ->reverse()
             ->unique('address')
-            ->reverse()
             ->values()
             ->all();
 
@@ -949,7 +915,7 @@ class Mailable implements MailableContract, Renderable
         }
 
         if ($file instanceof Attachment) {
-            return $file->attachTo($this, $options);
+            return $file->attachTo($this);
         }
 
         $this->attachments = collect($this->attachments)
@@ -992,17 +958,14 @@ class Mailable implements MailableContract, Renderable
             $file = $file->toMailAttachment();
         }
 
-        if ($file instanceof Attachment && $this->hasEnvelopeAttachment($file, $options)) {
+        if ($file instanceof Attachment && $this->hasEnvelopeAttachment($file)) {
             return true;
         }
 
         if ($file instanceof Attachment) {
             $parts = $file->attachWith(
-                fn ($path) => [$path, [
-                    'as' => $options['as'] ?? $file->as,
-                    'mime' => $options['mime'] ?? $file->mime,
-                ]],
-                fn ($data) => $this->hasAttachedData($data(), $options['as'] ?? $file->as, ['mime' => $options['mime'] ?? $file->mime])
+                fn ($path) => [$path, ['as' => $file->as, 'mime' => $file->mime]],
+                fn ($data) => $this->hasAttachedData($data(), $file->as, ['mime' => $file->mime])
             );
 
             if ($parts === true) {
@@ -1023,10 +986,9 @@ class Mailable implements MailableContract, Renderable
      * Determine if the mailable has the given envelope attachment.
      *
      * @param  \Illuminate\Mail\Attachment  $attachment
-     * @param  array  $options
      * @return bool
      */
-    private function hasEnvelopeAttachment($attachment, $options = [])
+    private function hasEnvelopeAttachment($attachment)
     {
         if (! method_exists($this, 'envelope')) {
             return false;
@@ -1036,7 +998,7 @@ class Mailable implements MailableContract, Renderable
 
         return Collection::make(is_object($attachments) ? [$attachments] : $attachments)
                 ->map(fn ($attached) => $attached instanceof Attachable ? $attached->toMailAttachment() : $attached)
-                ->contains(fn ($attached) => $attached->isEquivalent($attachment, $options));
+                ->contains(fn ($attached) => $attached->isEquivalent($attachment));
     }
 
     /**
@@ -1204,8 +1166,6 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertFrom($address, $name = null)
     {
-        $this->renderForAssertions();
-
         $recipient = $this->formatAssertionRecipient($address, $name);
 
         PHPUnit::assertTrue(
@@ -1225,13 +1185,11 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertTo($address, $name = null)
     {
-        $this->renderForAssertions();
-
         $recipient = $this->formatAssertionRecipient($address, $name);
 
         PHPUnit::assertTrue(
             $this->hasTo($address, $name),
-            "Did not see expected recipient [{$recipient}] in email 'to' recipients."
+            "Did not see expected recipient [{$recipient}] in email recipients."
         );
 
         return $this;
@@ -1258,13 +1216,11 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertHasCc($address, $name = null)
     {
-        $this->renderForAssertions();
-
         $recipient = $this->formatAssertionRecipient($address, $name);
 
         PHPUnit::assertTrue(
             $this->hasCc($address, $name),
-            "Did not see expected recipient [{$recipient}] in email 'cc' recipients."
+            "Did not see expected recipient [{$recipient}] in email recipients."
         );
 
         return $this;
@@ -1279,13 +1235,11 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertHasBcc($address, $name = null)
     {
-        $this->renderForAssertions();
-
         $recipient = $this->formatAssertionRecipient($address, $name);
 
         PHPUnit::assertTrue(
             $this->hasBcc($address, $name),
-            "Did not see expected recipient [{$recipient}] in email 'bcc' recipients."
+            "Did not see expected recipient [{$recipient}] in email recipients."
         );
 
         return $this;
@@ -1300,8 +1254,6 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertHasReplyTo($address, $name = null)
     {
-        $this->renderForAssertions();
-
         $replyTo = $this->formatAssertionRecipient($address, $name);
 
         PHPUnit::assertTrue(
@@ -1313,7 +1265,7 @@ class Mailable implements MailableContract, Renderable
     }
 
     /**
-     * Format the mailable recipient for display in an assertion message.
+     * Format the mailable recipeint for display in an assertion message.
      *
      * @param  object|array|string  $address
      * @param  string|null  $name
@@ -1340,8 +1292,6 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertHasSubject($subject)
     {
-        $this->renderForAssertions();
-
         PHPUnit::assertTrue(
             $this->hasSubject($subject),
             "Did not see expected text [{$subject}] in email subject."
@@ -1354,18 +1304,14 @@ class Mailable implements MailableContract, Renderable
      * Assert that the given text is present in the HTML email body.
      *
      * @param  string  $string
-     * @param  bool  $escape
      * @return $this
      */
-    public function assertSeeInHtml($string, $escape = true)
+    public function assertSeeInHtml($string)
     {
-        $string = $escape ? e($string) : $string;
-
         [$html, $text] = $this->renderForAssertions();
 
-        PHPUnit::assertStringContainsString(
-            $string,
-            $html,
+        PHPUnit::assertTrue(
+            str_contains($html, $string),
             "Did not see expected text [{$string}] within email body."
         );
 
@@ -1376,18 +1322,14 @@ class Mailable implements MailableContract, Renderable
      * Assert that the given text is not present in the HTML email body.
      *
      * @param  string  $string
-     * @param  bool  $escape
      * @return $this
      */
-    public function assertDontSeeInHtml($string, $escape = true)
+    public function assertDontSeeInHtml($string)
     {
-        $string = $escape ? e($string) : $string;
-
         [$html, $text] = $this->renderForAssertions();
 
-        PHPUnit::assertStringNotContainsString(
-            $string,
-            $html,
+        PHPUnit::assertFalse(
+            str_contains($html, $string),
             "Saw unexpected text [{$string}] within email body."
         );
 
@@ -1398,13 +1340,10 @@ class Mailable implements MailableContract, Renderable
      * Assert that the given text strings are present in order in the HTML email body.
      *
      * @param  array  $strings
-     * @param  bool  $escape
      * @return $this
      */
-    public function assertSeeInOrderInHtml($strings, $escape = true)
+    public function assertSeeInOrderInHtml($strings)
     {
-        $strings = $escape ? array_map('e', $strings) : $strings;
-
         [$html, $text] = $this->renderForAssertions();
 
         PHPUnit::assertThat($strings, new SeeInOrder($html));
@@ -1422,9 +1361,8 @@ class Mailable implements MailableContract, Renderable
     {
         [$html, $text] = $this->renderForAssertions();
 
-        PHPUnit::assertStringContainsString(
-            $string,
-            $text,
+        PHPUnit::assertTrue(
+            str_contains($text, $string),
             "Did not see expected text [{$string}] within text email body."
         );
 
@@ -1441,9 +1379,8 @@ class Mailable implements MailableContract, Renderable
     {
         [$html, $text] = $this->renderForAssertions();
 
-        PHPUnit::assertStringNotContainsString(
-            $string,
-            $text,
+        PHPUnit::assertFalse(
+            str_contains($text, $string),
             "Saw unexpected text [{$string}] within text email body."
         );
 
@@ -1553,8 +1490,6 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertHasTag($tag)
     {
-        $this->renderForAssertions();
-
         PHPUnit::assertTrue(
             $this->hasTag($tag),
             "Did not see expected tag [{$tag}] in email tags."
@@ -1572,8 +1507,6 @@ class Mailable implements MailableContract, Renderable
      */
     public function assertHasMetadata($key, $value)
     {
-        $this->renderForAssertions();
-
         PHPUnit::assertTrue(
             $this->hasMetadata($key, $value),
             "Did not see expected key [{$key}] and value [{$value}] in email metadata."
@@ -1623,7 +1556,7 @@ class Mailable implements MailableContract, Renderable
      *
      * @return void
      */
-    protected function prepareMailableForDelivery()
+    private function prepareMailableForDelivery()
     {
         if (method_exists($this, 'build')) {
             Container::getInstance()->call([$this, 'build']);

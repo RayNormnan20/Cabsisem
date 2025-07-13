@@ -11,10 +11,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\Macroable;
 use IteratorAggregate;
-use JsonSerializable;
 use Traversable;
 
-class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSerializable, Htmlable
+class ComponentAttributeBag implements ArrayAccess, Htmlable, IteratorAggregate
 {
     use Conditionable, Macroable;
 
@@ -62,43 +61,12 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
     /**
      * Determine if a given attribute exists in the attribute array.
      *
-     * @param  array|string  $key
+     * @param  string  $key
      * @return bool
      */
     public function has($key)
     {
-        $keys = is_array($key) ? $key : func_get_args();
-
-        foreach ($keys as $value) {
-            if (! array_key_exists($value, $this->attributes)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Determine if any of the keys exist in the attribute array.
-     *
-     * @param  array|string  $key
-     * @return bool
-     */
-    public function hasAny($key)
-    {
-        if (! count($this->attributes)) {
-            return false;
-        }
-
-        $keys = is_array($key) ? $key : func_get_args();
-
-        foreach ($keys as $value) {
-            if ($this->has($value)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_key_exists($key, $this->attributes);
     }
 
     /**
@@ -109,7 +77,7 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
      */
     public function missing($key)
     {
-        return ! $this->has($key);
+        return ! $this->has($key, $this->attributes);
     }
 
     /**
@@ -254,19 +222,6 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
     }
 
     /**
-     * Conditionally merge styles into the attribute bag.
-     *
-     * @param  mixed|array  $styleList
-     * @return static
-     */
-    public function style($styleList)
-    {
-        $styleList = Arr::wrap($styleList);
-
-        return $this->merge(['style' => Arr::toCssStyles($styleList)]);
-    }
-
-    /**
      * Merge additional attributes / values into the attribute bag.
      *
      * @param  array  $attributeDefaults
@@ -283,20 +238,15 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
 
         [$appendableAttributes, $nonAppendableAttributes] = collect($this->attributes)
                     ->partition(function ($value, $key) use ($attributeDefaults) {
-                        return $key === 'class' || $key === 'style' || (
-                            isset($attributeDefaults[$key]) &&
-                            $attributeDefaults[$key] instanceof AppendableAttributeValue
-                        );
+                        return $key === 'class' ||
+                               (isset($attributeDefaults[$key]) &&
+                                $attributeDefaults[$key] instanceof AppendableAttributeValue);
                     });
 
         $attributes = $appendableAttributes->mapWithKeys(function ($value, $key) use ($attributeDefaults, $escape) {
             $defaultsValue = isset($attributeDefaults[$key]) && $attributeDefaults[$key] instanceof AppendableAttributeValue
                         ? $this->resolveAppendableAttributeDefault($attributeDefaults, $key, $escape)
                         : ($attributeDefaults[$key] ?? '');
-
-            if ($key === 'style') {
-                $value = Str::finish($value, ';');
-            }
 
             return [$key => implode(' ', array_unique(array_filter([$defaultsValue, $value])))];
         })->merge($nonAppendableAttributes)->all();
@@ -348,26 +298,6 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
         }
 
         return $value;
-    }
-
-    /**
-     * Determine if the attribute bag is empty.
-     *
-     * @return bool
-     */
-    public function isEmpty()
-    {
-        return trim((string) $this) === '';
-    }
-
-    /**
-     * Determine if the attribute bag is not empty.
-     *
-     * @return bool
-     */
-    public function isNotEmpty()
-    {
-        return ! $this->isEmpty();
     }
 
     /**
@@ -477,16 +407,6 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
     }
 
     /**
-     * Convert the object into a JSON serializable form.
-     *
-     * @return mixed
-     */
-    public function jsonSerialize(): mixed
-    {
-        return $this->attributes;
-    }
-
-    /**
      * Implode the attributes into a single HTML ready string.
      *
      * @return string
@@ -501,8 +421,7 @@ class ComponentAttributeBag implements ArrayAccess, IteratorAggregate, JsonSeria
             }
 
             if ($value === true) {
-                // Exception for Alpine...
-                $value = $key === 'x-data' ? '' : $key;
+                $value = $key;
             }
 
             $string .= ' '.$key.'="'.str_replace('"', '\\"', trim($value)).'"';

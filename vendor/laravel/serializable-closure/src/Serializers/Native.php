@@ -10,7 +10,6 @@ use Laravel\SerializableClosure\Support\ClosureScope;
 use Laravel\SerializableClosure\Support\ClosureStream;
 use Laravel\SerializableClosure\Support\ReflectionClosure;
 use Laravel\SerializableClosure\Support\SelfReference;
-use Laravel\SerializableClosure\UnsignedSerializableClosure;
 use ReflectionObject;
 use UnitEnum;
 
@@ -378,13 +377,9 @@ class Native implements Serializable
                         continue;
                     }
 
-                    if (PHP_VERSION >= 8.1 && $property->isReadOnly()) {
-                        continue;
-                    }
-
                     $item = $property->getValue($data);
 
-                    if ($item instanceof SerializableClosure || $item instanceof UnsignedSerializableClosure || ($item instanceof SelfReference && $item->hash === $this->code['self'])) {
+                    if ($item instanceof SerializableClosure || ($item instanceof SelfReference && $item->hash === $this->code['self'])) {
                         $this->code['objects'][] = [
                             'instance' => $data,
                             'property' => $property,
@@ -457,7 +452,7 @@ class Native implements Serializable
             }
 
             unset($value);
-        } elseif (is_object($data) && ! $data instanceof SerializableClosure && ! $data instanceof UnsignedSerializableClosure) {
+        } elseif (is_object($data) && ! $data instanceof SerializableClosure) {
             if (isset($this->scope[$data])) {
                 $data = $this->scope[$data];
 
@@ -501,10 +496,6 @@ class Native implements Serializable
                     $property->setAccessible(true);
 
                     if (PHP_VERSION >= 7.4 && ! $property->isInitialized($instance)) {
-                        continue;
-                    }
-
-                    if (PHP_VERSION >= 8.1 && $property->isReadOnly() && $property->class !== $reflection->name) {
                         continue;
                     }
 

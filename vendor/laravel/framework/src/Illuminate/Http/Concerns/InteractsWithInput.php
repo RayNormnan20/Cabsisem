@@ -120,7 +120,7 @@ trait InteractsWithInput
      * @param  callable|null  $default
      * @return $this|mixed
      */
-    public function whenHas($key, callable $callback, ?callable $default = null)
+    public function whenHas($key, callable $callback, callable $default = null)
     {
         if ($this->has($key)) {
             return $callback(data_get($this->all(), $key)) ?: $this;
@@ -198,7 +198,7 @@ trait InteractsWithInput
      * @param  callable|null  $default
      * @return $this|mixed
      */
-    public function whenFilled($key, callable $callback, ?callable $default = null)
+    public function whenFilled($key, callable $callback, callable $default = null)
     {
         if ($this->filled($key)) {
             return $callback(data_get($this->all(), $key)) ?: $this;
@@ -232,7 +232,7 @@ trait InteractsWithInput
      * @param  callable|null  $default
      * @return $this|mixed
      */
-    public function whenMissing($key, callable $callback, ?callable $default = null)
+    public function whenMissing($key, callable $callback, callable $default = null)
     {
         if ($this->missing($key)) {
             return $callback(data_get($this->all(), $key)) ?: $this;
@@ -246,7 +246,7 @@ trait InteractsWithInput
     }
 
     /**
-     * Determine if the given input key is an empty string for "filled".
+     * Determine if the given input key is an empty string for "has".
      *
      * @param  string  $key
      * @return bool
@@ -402,6 +402,7 @@ trait InteractsWithInput
     public function enum($key, $enumClass)
     {
         if ($this->isNotFilled($key) ||
+            ! function_exists('enum_exists') ||
             ! enum_exists($enumClass) ||
             ! method_exists($enumClass, 'tryFrom')) {
             return null;
@@ -589,7 +590,7 @@ trait InteractsWithInput
      * Retrieve a parameter item from a given source.
      *
      * @param  string  $source
-     * @param  string|null  $key
+     * @param  string  $key
      * @param  string|array|null  $default
      * @return string|array|null
      */
@@ -609,7 +610,7 @@ trait InteractsWithInput
     /**
      * Dump the request items and end the script.
      *
-     * @param  mixed  ...$keys
+     * @param  mixed  $keys
      * @return never
      */
     public function dd(...$keys)

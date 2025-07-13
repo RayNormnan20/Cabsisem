@@ -3,7 +3,7 @@
 /*
  * This file is part of Psy Shell.
  *
- * (c) 2012-2023 Justin Hileman
+ * (c) 2012-2022 Justin Hileman
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -23,9 +23,12 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class WhereamiCommand extends Command
 {
-    private array $backtrace;
+    private $backtrace;
 
-    public function __construct()
+    /**
+     * @param string|null $colorMode (deprecated and ignored)
+     */
+    public function __construct($colorMode = null)
     {
         $this->backtrace = \debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
 
@@ -109,7 +112,7 @@ HELP
      *
      * @return int 0 if everything went fine, or an exit code
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $info = $this->fileInfo();
         $num = $input->getOption('num');
@@ -141,6 +144,8 @@ HELP
      * Replace the given directory from the start of a filepath.
      *
      * @param string $file
+     *
+     * @return string
      */
     private function replaceCwd(string $file): string
     {

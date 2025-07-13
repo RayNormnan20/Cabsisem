@@ -97,7 +97,7 @@ final class Console
     /**
      * Returns if the file descriptor is an interactive terminal or not.
      *
-     * Normally, we want to use a resource as a parameter, yet sadly it's not always available,
+     * Normally, we want to use a resource as a parameter, yet sadly it's not always awailable,
      * eg when running code in interactive console (`php -a`), STDIN/STDOUT/STDERR constants are not defined.
      *
      * @param int|resource $fileDescriptor
@@ -105,14 +105,16 @@ final class Console
     public function isInteractive($fileDescriptor = self::STDOUT): bool
     {
         if (is_resource($fileDescriptor)) {
+            // These functions require a descriptor that is a real resource, not a numeric ID of it
             if (function_exists('stream_isatty') && @stream_isatty($fileDescriptor)) {
                 return true;
             }
 
-            if (function_exists('fstat')) {
+            // Check if formatted mode is S_IFCHR
+            if (function_exists('fstat') && @stream_isatty($fileDescriptor)) {
                 $stat = @fstat(STDOUT);
 
-                return $stat && 0o020000 === ($stat['mode'] & 0o170000);
+                return $stat ? 0020000 === ($stat['mode'] & 0170000) : false;
             }
 
             return false;
@@ -166,7 +168,7 @@ final class Console
                 $pipes,
                 null,
                 null,
-                ['suppress_errors' => true],
+                ['suppress_errors' => true]
             );
 
             if (is_resource($process)) {

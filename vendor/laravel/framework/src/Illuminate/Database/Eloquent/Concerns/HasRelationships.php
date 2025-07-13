@@ -7,7 +7,6 @@ use Illuminate\Database\ClassMorphViolationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\PendingHasThroughRelationship;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -361,21 +360,6 @@ trait HasRelationships
     }
 
     /**
-     * Create a pending has-many-through or has-one-through relationship.
-     *
-     * @param  string|\Illuminate\Database\Eloquent\Relations\HasMany|\Illuminate\Database\Eloquent\Relations\HasOne  $relationship
-     * @return \Illuminate\Database\Eloquent\PendingHasThroughRelationship
-     */
-    public function through($relationship)
-    {
-        if (is_string($relationship)) {
-            $relationship = $this->{$relationship}();
-        }
-
-        return new PendingHasThroughRelationship($this, $relationship);
-    }
-
-    /**
      * Define a one-to-many relationship.
      *
      * @param  string  $related
@@ -502,7 +486,7 @@ trait HasRelationships
      * Define a many-to-many relationship.
      *
      * @param  string  $related
-     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>|null  $table
+     * @param  string|null  $table
      * @param  string|null  $foreignPivotKey
      * @param  string|null  $relatedPivotKey
      * @param  string|null  $parentKey
@@ -548,7 +532,7 @@ trait HasRelationships
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>  $table
+     * @param  string  $table
      * @param  string  $foreignPivotKey
      * @param  string  $relatedPivotKey
      * @param  string  $parentKey
@@ -572,15 +556,14 @@ trait HasRelationships
      * @param  string|null  $relatedPivotKey
      * @param  string|null  $parentKey
      * @param  string|null  $relatedKey
-     * @param  string|null  $relation
      * @param  bool  $inverse
      * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
      */
     public function morphToMany($related, $name, $table = null, $foreignPivotKey = null,
                                 $relatedPivotKey = null, $parentKey = null,
-                                $relatedKey = null, $relation = null, $inverse = false)
+                                $relatedKey = null, $inverse = false)
     {
-        $relation = $relation ?: $this->guessBelongsToManyRelation();
+        $caller = $this->guessBelongsToManyRelation();
 
         // First, we will need to determine the foreign key and "other key" for the
         // relationship. Once we have determined the keys we will make the query
@@ -605,7 +588,7 @@ trait HasRelationships
         return $this->newMorphToMany(
             $instance->newQuery(), $this, $name, $table,
             $foreignPivotKey, $relatedPivotKey, $parentKey ?: $this->getKeyName(),
-            $relatedKey ?: $instance->getKeyName(), $relation, $inverse
+            $relatedKey ?: $instance->getKeyName(), $caller, $inverse
         );
     }
 
@@ -642,11 +625,10 @@ trait HasRelationships
      * @param  string|null  $relatedPivotKey
      * @param  string|null  $parentKey
      * @param  string|null  $relatedKey
-     * @param  string|null  $relation
      * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
      */
     public function morphedByMany($related, $name, $table = null, $foreignPivotKey = null,
-                                  $relatedPivotKey = null, $parentKey = null, $relatedKey = null, $relation = null)
+                                  $relatedPivotKey = null, $parentKey = null, $relatedKey = null)
     {
         $foreignPivotKey = $foreignPivotKey ?: $this->getForeignKey();
 
@@ -657,7 +639,7 @@ trait HasRelationships
 
         return $this->morphToMany(
             $related, $name, $table, $foreignPivotKey,
-            $relatedPivotKey, $parentKey, $relatedKey, $relation, true
+            $relatedPivotKey, $parentKey, $relatedKey, true
         );
     }
 
