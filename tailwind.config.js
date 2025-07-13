@@ -7,7 +7,9 @@ module.exports = {
         './app/Filament/**/*.php',
         './app/Http/Livewire/**/*.php',
         './vendor/filament/**/*.blade.php',
-        './node_modules/flowbite/**/*.js'
+        './node_modules/flowbite/**/*.js',
+        "./resources/**/*.js",
+        "./resources/**/*.vue"
     ],
     darkMode: 'class',
     theme: {
