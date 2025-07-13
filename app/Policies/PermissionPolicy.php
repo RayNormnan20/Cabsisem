@@ -18,7 +18,7 @@ class PermissionPolicy
      */
     public function viewAny(User $user)
     {
-        return $user->can('List permissions');
+        return $user->can('Listar Permisos');
     }
 
     /**
@@ -30,7 +30,7 @@ class PermissionPolicy
      */
     public function view(User $user, Permission $permission)
     {
-        return $user->can('View permission');
+        return $user->can('Ver Permisos');
     }
 
     /**
@@ -41,7 +41,7 @@ class PermissionPolicy
      */
     public function create(User $user)
     {
-        return $user->can('Create permission');
+        return $user->can('Crear Permisos');
     }
 
     /**
@@ -53,7 +53,7 @@ class PermissionPolicy
      */
     public function update(User $user, Permission $permission)
     {
-        return $user->can('Update permission');
+        return $user->can('Actualizar Permisos');
     }
 
     /**
@@ -65,6 +65,6 @@ class PermissionPolicy
      */
     public function delete(User $user, Permission $permission)
     {
-        return $user->can('Delete permission');
+        return $user->can('Eliminar Permisos');
     }
 }

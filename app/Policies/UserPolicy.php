@@ -17,7 +17,7 @@ class UserPolicy
      */
     public function viewAny(User $user)
     {
-        return $user->can('List users');
+        return $user->can('Listar Usuarios');
     }
 
     /**
@@ -29,7 +29,7 @@ class UserPolicy
      */
     public function view(User $user, User $model)
     {
-        return $user->can('View user');
+        return $user->can('Ver Usuario');
     }
 
     /**
@@ -40,7 +40,7 @@ class UserPolicy
      */
     public function create(User $user)
     {
-        return $user->can('Create user');
+        return $user->can('Crear Usuario');
     }
 
     /**
@@ -52,11 +52,11 @@ class UserPolicy
      */
     public function update(User $user, User $model)
     {
-        return $user->can('Update usuauriosasa');
+        return $user->can('Actualizar Usuario');
     }
 
 
-    
+
 
     /**
      * Determine whether the user can delete the model.
@@ -67,6 +67,6 @@ class UserPolicy
      */
     public function delete(User $user, User $model)
     {
-        return $user->can('Delete user');
+        return $user->can('Eliminar Usuario');
     }
 }

@@ -1,0 +1,39 @@
+
+----------CREAR MODELOS POR TERMINAL ------------
+
+
+php artisan make:model Moneda
+php artisan make:model TipoDocumento
+php artisan make:model TipoCobro
+
+php artisan make:model Seguro
+php artisan make:model Oficcina
+php artisan make:model ConfiguracionAbonos
+php artisan make:model OficinaSeguro
+php artisan make:model Ruta
+php artisan make:model RutaUsuario
+php artisan make:model Socio
+php artisan make:model HistorialCambios
+
+
+
+
+------CREAR VISTAS WEB DEL SISTEMA -------
+
+
+php artisan make:filament-resource Rutas
+php artisan make:filament-resource Oficinas
+
+
+
+
+
+------ CREARLAS TABLAS PARA LOS MIGRATE -------
+
+
+php artisan make:migration create_moneda_table
+php artisan make:migration create_tipo_documento_table
+php artisan make:migration create_tipo_cobro_table
+
+php artisan make:migration create_oficina_table
+php artisan make:migration create_configuracion_abonos_table

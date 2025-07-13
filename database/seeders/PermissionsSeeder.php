@@ -13,17 +13,16 @@ use Illuminate\Support\Str;
 class PermissionsSeeder extends Seeder
 {
     private array $modules = [
-        'permission', 'project', 'project status', 'role', 'ticket',
-        'ticket priority', 'ticket status', 'ticket type', 'user',
-        'activity', 'sprint'
+        'Permisos', 'Rol',   'Usuario'
+
     ];
 
     private array $pluralActions = [
-        'List'
+        'Listar'
     ];
 
     private array $singularActions = [
-        'View', 'Create', 'Update', 'Delete'
+        'Ver', 'Crear', 'Actualizar', 'Eliminar'
     ];
 
     private array $extraPermissions = [
