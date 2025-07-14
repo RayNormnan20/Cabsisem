@@ -33,16 +33,17 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     protected $fillable = [
         'name',
         'email',
-        'password',
+        'celular',
+        'password', //
         'creation_token',
         'type',
         'oidc_username',
         'oidc_sub',
         'email_verified_at',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
+        'two_factor_secret', //
+        'two_factor_recovery_codes', //
         'two_factor_confirmed_at',
-        'remember_token',
+        'remember_token', //
         'is_vendedor',
         'vendedor_id',
         'fecha_ingreso',

@@ -40,35 +40,68 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
+            Forms\Components\Card::make()
+                ->schema([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('first_name')
+                                ->label('Nombre')
+                                ->required()
+                                ->maxLength(100),
 
-                Forms\Components\Card::make()
-                    ->schema([
-                        Forms\Components\Grid::make()
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->label(__('Full name'))
-                                    ->required()
-                                    ->maxLength(255),
+                            Forms\Components\TextInput::make('last_name')
+                                ->label('Apellidos')
+                                ->required()
+                                ->maxLength(100),
 
-                                Forms\Components\TextInput::make('email')
-                                    ->label(__('Email address'))
-                                    ->email()
-                                    ->required()
-                                    ->rule(
-                                        fn($record) => 'unique:users,email,'
-                                            . ($record ? $record->id : 'NULL')
-                                            . ',id,deleted_at,NULL'
-                                    )
-                                    ->maxLength(255),
+                            Forms\Components\TextInput::make('phone')
+                                ->label('Celular')
+                                ->required()
+                                ->tel()
+                                ->maxLength(15),
 
-                                Forms\Components\CheckboxList::make('roles')
-                                    ->label(__('Permission roles'))
-                                    ->required()
-                                    ->columns(3)
-                                    ->relationship('roles', 'name'),
-                            ]),
-                    ])
-            ]);
+                            Forms\Components\TextInput::make('email')
+                                ->label('Correo Electrónico')
+                                ->email()
+                                ->required()
+                                ->unique(ignoreRecord: true)
+                                ->maxLength(255),
+
+                            Forms\Components\TextInput::make('password')
+                                ->label('Contraseña')
+                                ->password()
+                                ->maxLength(255)
+                                ->dehydrated(fn ($state) => filled($state))
+                                ->required(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
+                                ->confirmed(),
+
+                            Forms\Components\TextInput::make('password_confirmation')
+                                ->label('Confirmar contraseña')
+                                ->password()
+                                ->maxLength(255)
+                                ->dehydrated(false),
+
+                            Forms\Components\Toggle::make('is_active')
+                                ->label('¿Usuario activo?')
+                                ->default(true),
+
+                            Forms\Components\Select::make('roles')
+                                ->label('Cargos')
+                                ->required()
+                                ->multiple()
+                                ->relationship('roles', 'name')
+                                ->preload()
+                                ->searchable(),
+
+                            /* Forms\Components\Select::make('ruta')
+                                ->label('Asignar rutas')
+                                ->multiple()
+                                ->relationship('ruta', 'nombre')
+                                ->preload()
+                                ->searchable(), */
+                        ]),
+                ]),
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -95,8 +128,8 @@ class UserResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                    /*
-                Tables\Columns\TextColumn::make('socials')
+                
+                /* Tables\Columns\TextColumn::make('socials')
                     ->label(__('Linked social networks'))
                     ->view('partials.filament.resources.social-icon'),
 
@@ -104,9 +137,10 @@ class UserResource extends Resource
                     ->label(__('Created at'))
                     ->dateTime()
                     ->sortable()
-                    ->searchable(),
-                     */
+                    ->searchable(), */
+                
             ])
+            
             ->filters([
                 //
             ])
