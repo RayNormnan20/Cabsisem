@@ -26,7 +26,7 @@ class OficinasResource extends Resource
 {
     protected static ?string $model = Oficina::class;
     protected static ?string $navigationIcon = 'heroicon-o-office-building';
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
 
     protected static function getNavigationLabel(): string
     {

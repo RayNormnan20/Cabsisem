@@ -18,6 +18,8 @@ php artisan make:model Creditos
 php artisan make:model Clientes
 php artisan make:model LogActividad
 
+php artisan make:model OrdenCobro
+php artisan make:model TipoPago
 
 
 
@@ -49,6 +51,11 @@ php artisan make:migration create_ruta_table
 php artisan make:migration create_log_actividades_table
 php artisan make:migration create_clientes_table
 
+php artisan make:migration create_forma_pago_table
+php artisan make:migration create_orden_cobro_table
+php artisan make:migration create_orden_creditos_table
+
+
 
 
 -----  CREAR LOS MIGARTE DE LOS DATOS ------
@@ -57,6 +64,8 @@ php artisan make:seeder TipoDocumentoSeeder
 php artisan make:seeder TipoCobroSeeder
 php artisan make:seeder MonedaSeeder
 
+php artisan make:seeder FormaPagoSeeder
+php artisan make:seeder OrdenCobroSeeder
 
 
 
