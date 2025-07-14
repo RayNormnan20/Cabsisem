@@ -9,6 +9,12 @@ class LogActividad extends Model
     protected $table = 'log_actividades';
     protected $fillable = ['user_id', 'tipo', 'mensaje', 'metadata'];
 
+    // ¡Añade esta línea!
+    // Esto le dice a Laravel que el campo 'metadata' debe ser tratado como un array
+    protected $casts = [
+        'metadata' => 'array',
+    ];
+
     public function usuario()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -21,7 +27,7 @@ class LogActividad extends Model
             'user_id' => auth()->id(),
             'tipo' => $tipo,
             'mensaje' => $mensaje,
-            'metadata' => $metadata
+            'metadata' => $metadata // Laravel se encargará de convertir el array a JSON aquí
         ]);
     }
 }

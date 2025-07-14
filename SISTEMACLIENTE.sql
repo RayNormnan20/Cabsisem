@@ -178,6 +178,29 @@ CREATE TABLE historial_cambios (
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
 );
 
+
+
+
+CREATE TABLE creditos (
+    id_credito INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    fecha_credito DATE NOT NULL COMMENT 'Fecha del Crédito',
+    valor_credito DECIMAL(12,2) NOT NULL COMMENT 'Valor del Crédito (ej: 1,000.00)',
+    porcentaje_interes DECIMAL(5,2) NOT NULL COMMENT 'Porcentaje de interés (ej: 20)',
+    forma_pago ENUM('Diario', 'Semanal', 'Quincenal', 'Mensual') NOT NULL COMMENT 'Forma de Pago',
+    dias_plazo INT NOT NULL COMMENT 'Días del plazo (ej: 30)',
+    orden_cobro ENUM('Primero', 'Último', 'Aleatorio') NOT NULL DEFAULT 'Último' COMMENT 'Orden de Cobro',
+    saldo_actual DECIMAL(12,2) NOT NULL COMMENT 'Saldo actual (ej: 1,200.00)',
+    valor_cuota DECIMAL(10,2) NOT NULL COMMENT 'Valor de cada cuota (ej: 40.00)',
+    numero_cuotas INT NOT NULL COMMENT 'Número de cuotas (ej: 30)',
+    fecha_vencimiento DATE NOT NULL COMMENT 'Fecha de Vencimiento total',
+    fecha_proximo_pago DATE NOT NULL COMMENT 'Fecha del próximo pago',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+);
+
+
 -- Tabla de Sesiones
 CREATE TABLE sesion (
     id_sesion INT AUTO_INCREMENT PRIMARY KEY,

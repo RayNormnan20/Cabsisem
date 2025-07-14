@@ -28,6 +28,10 @@ class DatabaseSeeder extends Seeder
         $this->call(TipoCobroSeeder::class);
         $this->call(MonedaSeeder::class);
 
+        $this->call(FormaPagoSeeder::class);
+        $this->call(OrdenCobroSeeder::class);
+
+
 
 
     }

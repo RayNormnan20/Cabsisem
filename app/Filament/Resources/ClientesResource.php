@@ -37,7 +37,7 @@ class ClientesResource extends Resource
 
     protected static function getNavigationGroup(): ?string
     {
-        return __('Gestión Comercial');
+        return __('Créditos');
     }
 
     public static function form(Form $form): Form
