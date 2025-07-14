@@ -95,17 +95,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         });
     }
 
-    /**
-     * Relación con el modelo Vendedor
-     */
-    public function vendedor()
-    {
-        return $this->belongsTo(Vendedor::class);
-    }
 
-    /**
-     * Accesor para verificar si es vendedor
-     */
     public function isVendedor(): Attribute
     {
         return new Attribute(
@@ -166,6 +156,13 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             }
         );
     }
+
+    // En el modelo User.php
+    public function rutas()
+    {
+        return $this->hasMany(Ruta::class, 'id_usuario');
+    }
+
 
     public function canAccessFilament(): bool
     {

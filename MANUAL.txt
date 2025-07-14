@@ -14,6 +14,10 @@ php artisan make:model Ruta
 php artisan make:model RutaUsuario
 php artisan make:model Socio
 php artisan make:model HistorialCambios
+php artisan make:model Creditos
+php artisan make:model Clientes
+php artisan make:model LogActividad
+
 
 
 
@@ -23,7 +27,10 @@ php artisan make:model HistorialCambios
 
 php artisan make:filament-resource Rutas
 php artisan make:filament-resource Oficinas
+php artisan make:filament-resource Creditos
 
+php artisan make:filament-resource LogActividadResource
+php artisan make:filament-resource Clientes
 
 
 
@@ -37,3 +44,19 @@ php artisan make:migration create_tipo_cobro_table
 
 php artisan make:migration create_oficina_table
 php artisan make:migration create_configuracion_abonos_table
+
+php artisan make:migration create_ruta_table
+php artisan make:migration create_log_actividades_table
+php artisan make:migration create_clientes_table
+
+
+
+-----  CREAR LOS MIGARTE DE LOS DATOS ------
+
+php artisan make:seeder TipoDocumentoSeeder
+php artisan make:seeder TipoCobroSeeder
+php artisan make:seeder MonedaSeeder
+
+
+
+

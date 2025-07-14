@@ -5,6 +5,7 @@ namespace App\Filament\Resources\RutasResource\Pages;
 use App\Filament\Resources\RutasResource;
 use Filament\Pages\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListRutas extends ListRecords
 {
@@ -13,7 +14,14 @@ class ListRutas extends ListRecords
     protected function getActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Nueva Ruta')
+                ->icon('heroicon-s-plus'),
         ];
+    }
+
+    protected function getTableQuery(): Builder
+    {
+        return parent::getTableQuery()->with(['oficina', 'usuario']);
     }
 }

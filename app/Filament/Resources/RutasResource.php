@@ -3,28 +3,38 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RutasResource\Pages;
-use App\Filament\Resources\RutasResource\RelationManagers;
+use App\Models\Oficina;
 use App\Models\Ruta;
+use App\Models\TipoCobro;
+use App\Models\TipoDocumento;
+use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\Card;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
+
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class RutasResource extends Resource
 {
-
     protected static ?string $model = Ruta::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-map';
-
     protected static ?int $navigationSort = 3;
 
     protected static function getNavigationLabel(): string
     {
-        return __('Ruta');
+        return __('Rutas');
     }
 
     public static function getPluralLabel(): ?string
@@ -38,36 +48,161 @@ class RutasResource extends Resource
     }
 
     public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                //
-            ]);
-    }
+{
+    return $form
+        ->schema([
+            Card::make()->schema([
+                // Sección 1: Información básica
+                Section::make('Información Básica')
+                    ->schema([
+                        TextInput::make('nombre')
+                            ->required()
+                            ->maxLength(255)
+                            ->label('Nombre de la Ruta *'),
 
+
+
+                        Select::make('id_oficina')
+                            ->label('Oficina')
+                            ->options(Oficina::all()->pluck('nombre', 'id_oficina'))
+                            ->required()
+                            ->searchable(),
+                    ])->columns(2),
+
+                // Sección 2: Configuraciones de documentos y cobro
+                Section::make('Configuraciones')
+                    ->schema([
+                        Select::make('id_tipo_documento')
+                            ->label('Tipo de documento')
+                            ->options(TipoDocumento::all()->pluck('nombre', 'id_tipo_documento'))
+                            ->searchable(),
+
+                        Select::make('id_tipo_cobro')
+                            ->label('Tipo de Cobro')
+                            ->options(TipoCobro::all()->pluck('nombre', 'id_tipo_cobro'))
+                            ->searchable(),
+
+                        Toggle::make('agregar_ceros_cantidades')
+                            ->label('Agrupar 2 ceros a las cantidades del sistema')
+                            ->inline(false),
+                    ])->columns(2),
+
+                // Sección 3: Configuración de créditos
+                Section::make('Configuración de Créditos')
+                    ->schema([
+                        TextInput::make('porcentajes_credito')
+                            ->label('Limitar el porcentaje para créditos')
+                            ->helperText('Agregue uno o más porcentajes separados por comas. Ejemplo: 20,24,30')
+                            ->regex('/^[\d,]+$/')
+                            ->maxLength(255),
+                    ]),
+
+                // Sección 4: Usuarios asignados
+                Section::make('Usuarios Asignados')
+                    ->schema([
+                        Select::make('id_usuario')
+                            ->label('Seleccione el usuario asignado')
+                            ->options(User::all()->pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                    ]),
+
+                // Sección 5: Opciones adicionales
+                Section::make('Opciones Adicionales')
+                    ->schema([
+                        Toggle::make('cobradores_agregan_gastos')
+                            ->label('Los cobradores agregan gastos en el App')
+                            ->inline(false),
+
+                        Toggle::make('editar_interes_credito')
+                            ->label('Editar interés de Crédito')
+                            ->inline(false),
+
+                        Toggle::make('considerar_domingos_pago')
+                            ->label('Considerar domingos como día de pago')
+                            ->inline(false),
+
+                        Toggle::make('enrutamiento_automatico')
+                            ->label('Enrutamiento automático')
+                            ->inline(false),
+
+                        Toggle::make('activa')
+                            ->label('Ruta activa')
+                            ->default(true)
+                            ->inline(false),
+
+                              Hidden::make('creada_en')
+            ->default(now()->toDateString()),
+                    ])->columns(2),
+            ])
+        ]);
+}
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('nombre')
+                    ->label('Nombre')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
+
+                TextColumn::make('oficina.nombre')
+                    ->label('Oficina')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('creada_en')
+                    ->label('Creada')
+                    ->date('d M Y')
+                    ->sortable(),
+
+                BadgeColumn::make('activa')
+                    ->label('Estado')
+                    ->enum([
+                        true => 'Abierta',
+                        false => 'Cerrada'
+                    ])
+                    ->colors([
+                        'success' => true,
+                        'danger' => false
+                    ]),
             ])
             ->filters([
-                //
+                SelectFilter::make('id_oficina')
+                    ->label('Oficina')
+                    ->options(Oficina::all()->pluck('nombre', 'id_oficina'))
+                    ->searchable(),
+
+                SelectFilter::make('activa')
+                    ->label('Estado')
+                    ->options([
+                        true => 'Abiertas',
+                        false => 'Cerradas'
+                    ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Action::make('toggle_status')
+                    ->label(fn (Ruta $record) => $record->activa ? 'Cerrar Ruta' : 'Abrir Ruta')
+                    ->color(fn (Ruta $record) => $record->activa ? 'danger' : 'success')
+                    ->icon(fn (Ruta $record) => $record->activa ? 'heroicon-s-lock-closed' : 'heroicon-s-lock-open')
+                    ->action(function (Ruta $record) {
+                        $record->activa = !$record->activa;
+                        $record->save();
+                    }),
+
+                Tables\Actions\EditAction::make()
+                    ->icon('heroicon-s-pencil')
+                    ->color('primary'),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
+
+
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
+
 
     public static function getPages(): array
     {

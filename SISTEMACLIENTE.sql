@@ -216,13 +216,16 @@ INSERT INTO oficina (
     nombre,
     id_moneda,
     pais,
+    codigo,
     porcentajes_credito,
-    cobrador_edita_clientes,
-    foto_documento_obligatoria
+    ver_caja_anterior,
+    cobrador_ingresos_gastos,
+    liquidar_rutas
 ) VALUES
-('Perú', 1, 'Perú', '20%,25%,30%', TRUE, TRUE),
-('Colombia', 3, 'Colombia', '15%,20%,25%', FALSE, FALSE),
-('Paraguay', 4, 'Paraguay', '10%,15%,20%', TRUE, TRUE);
+('Oficina Central', 1, 'México', 'OF1', '10,15,20', FALSE, TRUE, TRUE),
+('Sucursal Norte', 1, 'México', 'OF2', '12,18,22', TRUE, TRUE, FALSE),
+('Sucursal Sur', 1, 'México', 'OF3', '8,10,12', FALSE, FALSE, TRUE),
+('Oficina Internacional', 2, 'España', 'OF4', '5,8,10', TRUE, TRUE, FALSE);
 
 -- Crear índices para mejorar rendimiento
 CREATE INDEX idx_ruta_activa ON ruta(activa);
@@ -234,7 +237,23 @@ CREATE INDEX idx_sesion_usuario ON sesion(id_usuario);
 CREATE INDEX idx_historial_tabla ON historial_cambios(tabla_afectada);
 CREATE INDEX idx_historial_usuario ON historial_cambios(id_usuario);
 
-
+-- Insertar datos de rutas
+INSERT INTO ruta (
+    nombre,
+    id_oficina,
+    creada_en,
+    activa,
+    id_tipo_documento,
+    id_tipo_cobro,
+    agregar_ceros_cantidades,
+    considerar_domingos_pago,
+    cobradores_agregan_gastos
+) VALUES
+('Ruta Centro', 1, '2023-01-15', TRUE, 1, 1, TRUE, FALSE, TRUE),
+('Ruta Comercial', 1, '2023-02-20', TRUE, 2, 2, FALSE, TRUE, TRUE),
+('Ruta Residencial', 2, '2023-03-10', TRUE, 1, 3, TRUE, FALSE, FALSE),
+('Ruta Industrial', 3, '2023-01-05', FALSE, 3, 1, FALSE, TRUE, TRUE),
+('Ruta Internacional', 4, '2023-04-01', TRUE, 2, 3, TRUE, FALSE, FALSE);
 
 
 HASTA ACA VA SIN EL USUARIO

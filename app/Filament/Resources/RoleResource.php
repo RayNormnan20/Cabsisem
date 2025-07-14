@@ -22,7 +22,7 @@ class RoleResource extends Resource
 
     protected static function getNavigationLabel(): string
     {
-        return __('Rols');
+        return __('Cargos');
     }
 
     public static function getPluralLabel(): ?string

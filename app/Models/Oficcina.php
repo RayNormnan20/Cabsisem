@@ -17,7 +17,9 @@ class Oficina extends Model
         'id_moneda',
         'pais',
         'codigo',
+        'max_abonos_diarios', // Nuevo campo
         'porcentajes_credito',
+        'activar_seguros', // Nuevo campo
         'ver_caja_anterior',
         'ver_entradas_salidas',
         'consultar_cuadre_pasado',
@@ -31,6 +33,8 @@ class Oficina extends Model
     ];
 
     protected $casts = [
+        'max_abonos_diarios' => 'integer',
+        'activar_seguros' => 'boolean',
         'ver_caja_anterior' => 'boolean',
         'ver_entradas_salidas' => 'boolean',
         'consultar_cuadre_pasado' => 'boolean',
@@ -43,7 +47,7 @@ class Oficina extends Model
         'creditos_requieren_autorizacion' => 'boolean'
     ];
 
-public function moneda()
+    public function moneda()
     {
         return $this->belongsTo(Moneda::class, 'id_moneda', 'id_moneda');
     }

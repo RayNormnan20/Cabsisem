@@ -9,8 +9,8 @@ return new class extends Migration
     public function up()
     {
         Schema::create('moneda', function (Blueprint $table) {
-            $table->id('id_moneda'); // Esto es crítico
-            $table->string('codigo', 10)->unique();
+            $table->id('id_moneda');
+            $table->string('codigo', 10);
             $table->string('nombre', 50);
             $table->string('simbolo', 5);
             $table->boolean('activa')->default(true);

@@ -13,7 +13,20 @@ class EditOficinas extends EditRecord
     protected function getActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\ViewAction::make()
+                ->icon('heroicon-o-eye')
+                ->button(),
+
+            Actions\DeleteAction::make()
+                ->icon('heroicon-o-trash')
+                ->button(),
+
+            Actions\Action::make('back')
+                ->label('Volver')
+                ->url(static::$resource::getUrl('index'))
+                ->icon('heroicon-o-arrow-left')
+                ->color('secondary')
+                ->button(),
         ];
     }
 }

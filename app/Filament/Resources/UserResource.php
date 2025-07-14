@@ -86,7 +86,7 @@ class UserResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TagsColumn::make('roles.name')
-                    ->label(__('Roles'))
+                    ->label(__('Cargo'))
                     ->limit(2),
 
                 Tables\Columns\TextColumn::make('email_verified_at')
@@ -95,6 +95,7 @@ class UserResource extends Resource
                     ->sortable()
                     ->searchable(),
 
+                    /*
                 Tables\Columns\TextColumn::make('socials')
                     ->label(__('Linked social networks'))
                     ->view('partials.filament.resources.social-icon'),
@@ -104,6 +105,7 @@ class UserResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->searchable(),
+                     */
             ])
             ->filters([
                 //
