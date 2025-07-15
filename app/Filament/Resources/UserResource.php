@@ -44,17 +44,17 @@ class UserResource extends Resource
                 ->schema([
                     Forms\Components\Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('first_name')
-                                ->label('Nombre')
+                            Forms\Components\TextInput::make('name')
+                                ->label('Nombres')
                                 ->required()
                                 ->maxLength(100),
 
-                            Forms\Components\TextInput::make('last_name')
+                            Forms\Components\TextInput::make('apellidos')
                                 ->label('Apellidos')
                                 ->required()
                                 ->maxLength(100),
 
-                            Forms\Components\TextInput::make('phone')
+                            Forms\Components\TextInput::make('celular')
                                 ->label('Celular')
                                 ->required()
                                 ->tel()
@@ -71,8 +71,9 @@ class UserResource extends Resource
                                 ->label('Contraseña')
                                 ->password()
                                 ->maxLength(255)
+                                ->dehydrateStateUsing(fn ($state) => bcrypt($state))
                                 ->dehydrated(fn ($state) => filled($state))
-                                ->required(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
+                                ->required(fn ($livewire) => $livewire instanceof CreateRecord)
                                 ->confirmed(),
 
                             Forms\Components\TextInput::make('password_confirmation')
@@ -93,12 +94,6 @@ class UserResource extends Resource
                                 ->preload()
                                 ->searchable(),
 
-                            /* Forms\Components\Select::make('ruta')
-                                ->label('Asignar rutas')
-                                ->multiple()
-                                ->relationship('ruta', 'nombre')
-                                ->preload()
-                                ->searchable(), */
                         ]),
                 ]),
         ]);
@@ -112,11 +107,25 @@ class UserResource extends Resource
                     ->label(__('Full name'))
                     ->sortable()
                     ->searchable(),
+                
+                Tables\Columns\TextColumn::make('nombres')
+                    ->label(__('Nombres'))
+                    ->sortable()
+                    ->searchable(),
+                
+                Tables\Columns\TextColumn::make('apellidos')
+                    ->label(__('Apellidos'))
+                    ->sortable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('Email address'))
                     ->sortable()
                     ->searchable(),
+
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Estado')
+                    ->boolean(),
 
                 Tables\Columns\TagsColumn::make('roles.name')
                     ->label(__('Cargo'))

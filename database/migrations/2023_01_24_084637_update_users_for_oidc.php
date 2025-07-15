@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('apellidos')->nullable();
             $table->string('celular')->nullable()->unique();
             $table->string('password')->nullable(true)->change();
+            $table->boolean('is_active')->default(true);
             $table->string('type')->default('db');
             $table->string('oidc_username')->nullable();
             $table->string('oidc_sub')->nullable();

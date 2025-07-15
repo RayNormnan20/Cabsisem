@@ -32,9 +32,12 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
      */
     protected $fillable = [
         'name',
+        'nombres',
+        'apellidos',
         'email',
         'celular',
         'password', //
+        'is_active',
         'creation_token',
         'type',
         'oidc_username',
@@ -87,6 +90,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
                 $item->password = bcrypt(uniqid());
                 $item->creation_token = Uuid::uuid4()->toString();
             }
+            $item->email_verified_at = now();
         });
 
         static::created(function (User $item) {
