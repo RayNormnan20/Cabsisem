@@ -173,4 +173,16 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     {
         return true;
     }
+
+    public function oficina()
+    {
+        return $this->belongsTo(Oficina::class, 'id_oficina');
+    }
+
+    public function rutasRevisables()
+    {
+        return $this->belongsToMany(Ruta::class, 'revisador_ruta', 'user_id', 'id_ruta')
+            ->withPivot(['permisos']);
+    }
+
 }

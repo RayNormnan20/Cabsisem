@@ -10,6 +10,11 @@ class CreateOficinas extends CreateRecord
 {
     protected static string $resource = OficinasResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        return static::$resource::getUrl('index');
+    }
+
     protected function getActions(): array
     {
         return [

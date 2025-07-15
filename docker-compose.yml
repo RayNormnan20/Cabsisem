@@ -42,6 +42,6 @@ services:
       - sqldb
     restart: "no"
     ports:
-      - 8000:8000
+      - 8001:8000
     volumes:
       - /etc/localtime:/etc/localtime

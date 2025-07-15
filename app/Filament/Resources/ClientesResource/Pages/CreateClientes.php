@@ -5,12 +5,24 @@ namespace App\Filament\Resources\ClientesResource\Pages;
 use App\Filament\Resources\ClientesResource;
 use App\Filament\Resources\CreditosResource;
 use App\Models\LogActividad;
-use Filament\Pages\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateClientes extends CreateRecord
 {
     protected static string $resource = ClientesResource::class;
+
+    public bool $crearCredito = false;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $this->crearCredito = $data['crear_credito'] ?? false;
+
+        unset($data['crear_credito']);
+
+        return $data;
+    }
+
+
 
     protected function afterCreate(): void
     {
@@ -29,31 +41,26 @@ class CreateClientes extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        // Si el checkbox "crear_credito" está marcado, redirigir a crear crédito
-        if ($this->record->crear_credito) {
+        if ($this->crearCredito) {
             return CreditosResource::getUrl('create', [
                 'cliente_id' => $this->record->id_cliente
             ]);
         }
-        
+
         return $this->getResource()::getUrl('index');
     }
 
     protected function getCreatedNotificationTitle(): ?string
     {
-        if ($this->record->crear_credito) {
-            return 'Cliente registrado. Redirigiendo a creación de crédito...';
-        }
-        
-        return 'Cliente registrado exitosamente';
+        return $this->crearCredito
+            ? 'Cliente registrado. Redirigiendo a creación de crédito...'
+            : 'Cliente registrado exitosamente';
     }
 
     protected function getCreatedNotificationMessage(): ?string
     {
-        if ($this->record->crear_credito) {
-            return 'El cliente se ha registrado correctamente. Ahora puedes crear su crédito.';
-        }
-        
-        return 'El cliente ha sido registrado en el sistema.';
+        return $this->crearCredito
+            ? 'El cliente se ha registrado correctamente. Ahora puedes crear su crédito.'
+            : 'El cliente ha sido registrado en el sistema.';
     }
 }

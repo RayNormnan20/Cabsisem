@@ -14,6 +14,7 @@ class Creditos extends Model
 
     protected $fillable = [
         'id_cliente',
+        'id_ruta',
         'fecha_credito',
         'valor_credito',
         'porcentaje_interes',
@@ -108,4 +109,19 @@ class Creditos extends Model
     {
         return $this->numero_cuotas - $this->cuotas_pagadas;
     }
+    public function conceptosCredito()
+    {
+        return $this->hasMany(ConceptoCredito::class, 'id_credito');
+    }
+
+    public function ruta()
+    {
+        return $this->belongsTo(Ruta::class, 'id_ruta');
+    }
+
+    public function scopeDeRuta($query, $rutaId)
+    {
+        return $query->where('id_ruta', $rutaId);
+    }
+
 }

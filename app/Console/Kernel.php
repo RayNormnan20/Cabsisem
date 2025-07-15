@@ -18,6 +18,12 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
     }
 
+
+    protected $routeMiddleware = [
+
+    'check.ruta.access' => \App\Http\Middleware\CheckRutaAccess::class,
+];
+
     /**
      * Register the commands for the application.
      *

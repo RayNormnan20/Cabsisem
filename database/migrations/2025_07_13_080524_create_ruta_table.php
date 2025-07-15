@@ -41,7 +41,6 @@ return new class extends Migration
                   ->on('tipo_cobro')
                   ->onDelete('set null');
 
-            // Nueva clave foránea para el usuario (vendedor)
             $table->foreign('id_usuario')
                   ->references('id')
                   ->on('users')
@@ -55,7 +54,7 @@ return new class extends Migration
             $table->dropForeign(['id_oficina']);
             $table->dropForeign(['id_tipo_documento']);
             $table->dropForeign(['id_tipo_cobro']);
-            $table->dropForeign(['id_usuario']); // Agregado para el rollback
+            $table->dropForeign(['id_usuario']);
         });
 
         Schema::dropIfExists('ruta');

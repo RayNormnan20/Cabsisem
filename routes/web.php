@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use App\Http\Controllers\RoadMap\DataController;
 use App\Http\Controllers\Auth\OidcAuthController;
+    use App\Http\Controllers\RutaController;
+use App\Http\Middleware\CheckRutaAccess;
 
 // Share ticket
 Route::get('/tickets/share/{ticket:code}', function (Ticket $ticket) {
@@ -36,3 +38,38 @@ Route::name('oidc.')
         Route::get('redirect', [OidcAuthController::class, 'redirect'])->name('redirect');
         Route::get('callback', [OidcAuthController::class, 'callback'])->name('callback');
     });
+
+
+Route::middleware(['auth', 'check.ruta.access'])->group(function () {
+    Route::get('/rutas/{ruta}', [RutaController::class, 'show'])->name('rutas.show');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    });
+});
+
+
+Route::middleware(['auth'])->group(function () {
+    // Rutas comunes
+
+    // Rutas protegidas por política
+    Route::middleware(['can:access-ruta,ruta'])->group(function () {
+        Route::get('/rutas/{ruta}', [RutaController::class, 'show'])->name('rutas.show');
+        Route::get('/rutas/{ruta}/clientes', [RutaController::class, 'clientes'])->name('rutas.clientes');
+    });
+
+    // Rutas de gestión
+    Route::middleware(['can:manage-rutas'])->group(function () {
+        Route::resource('rutas', RutaController::class)->except(['show', 'index']);
+    });
+
+    // Rutas de cobros
+    Route::middleware(['can:collect-payments', 'can:access-ruta,ruta'])->post('/rutas/{ruta}/abonos', [RutaController::class, 'storePayment']);
+
+    // Rutas de reportes
+    Route::middleware(['can:view-ruta-reports'])->group(function () {
+        Route::get('/rutas/{ruta}/reportes', [RutaController::class, 'reportes'])->name('rutas.reports');
+    });
+});

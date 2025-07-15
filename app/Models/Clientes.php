@@ -45,4 +45,10 @@ class Clientes extends Model
     {
         return "{$this->nombre} {$this->apellido}";
     }
+    public function scopeDeRuta($query, $rutaId)
+    {
+        return $query->whereHas('creditos', function($q) use ($rutaId) {
+            $q->where('id_ruta', $rutaId);
+        });
+    }
 }
