@@ -13,8 +13,8 @@ class TipoPago extends Model
     protected $primaryKey = 'id_forma_pago';
 
     protected $fillable = [
-        'codigo',
         'nombre',
+        'descripcion',
         'dias_frecuencia',
         'activo'
     ];
@@ -25,14 +25,6 @@ class TipoPago extends Model
     ];
 
     /**
-     * Obtener los créditos con esta forma de pago
-     */
-    public function creditos()
-    {
-        return $this->hasMany(Creditos::class, 'id_forma_pago');
-    }
-
-    /**
      * Scope para formas de pago activas
      */
     public function scopeActivos($query)
@@ -41,7 +33,15 @@ class TipoPago extends Model
     }
 
     /**
-     * Obtener el nombre completo con los días
+     * Relación con los créditos que usan esta forma de pago
+     */
+    public function creditos()
+    {
+        return $this->hasMany(Creditos::class, 'forma_pago', 'id_forma_pago');
+    }
+
+    /**
+     * Obtener el nombre descriptivo con días de frecuencia
      */
     public function getNombreCompletoAttribute()
     {

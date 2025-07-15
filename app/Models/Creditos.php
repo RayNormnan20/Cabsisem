@@ -50,26 +50,17 @@ class Creditos extends Model
      */
     public function tipoPago()
     {
-        return $this->belongsTo(TipoPago::class, 'forma_pago', 'codigo');
+        return $this->belongsTo(TipoPago::class, 'forma_pago', 'id_forma_pago');
     }
 
     /**
      * Relación con orden de cobro
      */
-    public function ordenCobroRelacion()
+    public function ordenCobro()
     {
-        return $this->belongsTo(OrdenCobro::class, 'orden_cobro', 'codigo');
+        return $this->belongsTo(OrdenCobro::class, 'orden_cobro', 'id_orden_cobro');
     }
 
-    /**
-     * Obtener los abonos/pagos realizados
-     */
-    /*
-    public function abonos()
-    {
-        return $this->hasMany(Abonos::class, 'id_credito');
-    }
-*/
     /**
      * Scope para créditos activos (con saldo pendiente)
      */

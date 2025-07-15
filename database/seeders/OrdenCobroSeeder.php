@@ -11,27 +11,23 @@ class OrdenCobroSeeder extends Seeder
     {
         $ordenesCobro = [
             [
-                'codigo' => 'PRIMERO', 
                 'nombre' => 'Primero', 
                 'descripcion' => 'Cobrar primero este crédito',
                 'activo' => true
             ],
             [
-                'codigo' => 'ULTIMO', 
                 'nombre' => 'Último', 
                 'descripcion' => 'Cobrar al final este crédito',
                 'activo' => true
             ],
-            [
-                'codigo' => 'ALEATORIO', 
-                'nombre' => 'Aleatorio', 
-                'descripcion' => 'Cobrar en orden aleatorio',
-                'activo' => true
-            ],
+        
         ];
 
         foreach ($ordenesCobro as $orden) {
-            OrdenCobro::create($orden);
+            OrdenCobro::firstOrCreate(
+                ['nombre' => $orden['nombre']],
+                $orden
+            );
         }
     }
 }

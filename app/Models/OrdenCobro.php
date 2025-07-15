@@ -13,7 +13,6 @@ class OrdenCobro extends Model
     protected $primaryKey = 'id_orden_cobro';
 
     protected $fillable = [
-        'codigo',
         'nombre', 
         'descripcion',
         'activo'
@@ -24,14 +23,6 @@ class OrdenCobro extends Model
     ];
 
     /**
-     * Obtener los créditos con este orden de cobro
-     */
-    public function creditos()
-    {
-        return $this->hasMany(Creditos::class, 'id_orden_cobro');
-    }
-
-    /**
      * Scope para órdenes de cobro activas
      */
     public function scopeActivos($query)
@@ -40,10 +31,10 @@ class OrdenCobro extends Model
     }
 
     /**
-     * Obtener el nombre con descripción abreviada
+     * Relación con los créditos que usan este orden de cobro
      */
-    public function getNombreDescriptivoAttribute()
+    public function creditos()
     {
-        return "{$this->nombre} ({$this->descripcion})";
+        return $this->hasMany(Creditos::class, 'orden_cobro', 'id_orden_cobro');
     }
 }
