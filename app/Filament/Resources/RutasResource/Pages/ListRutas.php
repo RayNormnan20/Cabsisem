@@ -22,6 +22,6 @@ class ListRutas extends ListRecords
 
     protected function getTableQuery(): Builder
     {
-        return parent::getTableQuery()->with(['oficina', 'usuario']);
+        return parent::getTableQuery()->with(['oficina', 'usuarios']);
     }
 }

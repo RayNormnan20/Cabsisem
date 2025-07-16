@@ -16,13 +16,22 @@ class CreateClientes extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $this->crearCredito = $data['crear_credito'] ?? false;
-
         unset($data['crear_credito']);
+
+
+        $rutaAsignada = auth()->user()?->rutas()?->first();
+        if ($rutaAsignada) {
+            $data['id_ruta'] = $rutaAsignada->id_ruta;
+        } else {
+            // Puedes lanzar una excepción o registrar un error aquí si es obligatorio
+            throw new \Exception('El usuario autenticado no tiene una ruta asignada.');
+        }
+
+        // Asignar también el usuario creador si lo necesitas
+        $data['id_usuario_creador'] = auth()->id();
 
         return $data;
     }
-
-
 
     protected function afterCreate(): void
     {

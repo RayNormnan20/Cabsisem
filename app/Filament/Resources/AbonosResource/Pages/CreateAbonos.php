@@ -19,10 +19,10 @@ class CreateAbonos extends CreateRecord
     public function mount(): void
     {
         parent::mount();
-        
+
         // Obtener el cliente_id de la URL
         $this->cliente_id = request()->query('cliente_id');
-        
+
         // Si tenemos un cliente_id, precargar los datos
         if ($this->cliente_id) {
             $this->form->fill([
@@ -70,7 +70,7 @@ class CreateAbonos extends CreateRecord
     protected function obtenerIdRutaUsuario()
     {
         $usuario = auth()->user();
-        
+
         // 1. Si es admin, obtener la primera ruta activa o lanzar error
         if ($usuario->hasRole('Administrador')) {
             $ruta = Ruta::activas()->first();
@@ -79,14 +79,14 @@ class CreateAbonos extends CreateRecord
             }
             return $ruta->id_ruta;
         }
-        
+
         // 2. Para cobradores, obtener su ruta asignada
-        $rutaUsuario = $usuario->ruta; // Asume relación 'ruta' en User model
-        
+       $rutaUsuario = $usuario->ruta()->first();
+
         if (!$rutaUsuario) {
             throw new \Exception('El usuario no tiene una ruta asignada');
         }
-        
+
         return $rutaUsuario->id_ruta;
     }
 

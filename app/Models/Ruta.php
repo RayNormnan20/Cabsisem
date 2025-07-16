@@ -49,7 +49,7 @@ class Ruta extends Model
 // Agrega esta relación al modelo
 public function usuarios()
 {
-    return $this->belongsToMany(User::class, 'usuario_ruta', 'id_ruta', 'id_usuario');
+    return $this->belongsToMany(User::class, 'usuario_ruta', 'id_ruta', 'user_id');
 }
 
 

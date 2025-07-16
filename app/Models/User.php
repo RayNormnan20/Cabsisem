@@ -199,4 +199,10 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     {
         return true;
     }
+
+    public function ruta()
+    {
+        return $this->belongsToMany(Ruta::class, 'usuario_ruta', 'user_id', 'id_ruta');
+    }
+
 }
