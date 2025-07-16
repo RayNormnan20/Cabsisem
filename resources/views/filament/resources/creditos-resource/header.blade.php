@@ -40,24 +40,64 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
     $cliente->loadMissing('creditos');
     @endphp
 
-    <div class="bg-white rounded-lg shadow overflow-hidden border border-gray-200 mb-6">
+    {{-- ¡IMPORTANTE! Se ha eliminado 'overflow-hidden' de este div --}}
+    <div x-data="{ showBajaModal: false }" class="bg-white rounded-lg shadow border border-gray-200 mb-6">
         {{-- Encabezado con nombre y botones --}}
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-800">{{ $cliente->nombre_completo }}</h2>
 
-            <div class="flex space-x-2">
+            {{-- Contenedor de los botones de acción (Editar Cliente, Editar Crédito/Crear Crédito, y el Dropdown) --}}
+            <div class="flex items-center space-x-2">
                 {{-- Botón Editar Cliente --}}
                 <a href="{{ route('filament.resources.clientes.edit', ['record' => $cliente->id_cliente]) }}"
                     class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                     Editar Cliente
                 </a>
 
-                {{-- Botón Crédito --}}
                 @if($cliente->creditos->isNotEmpty())
-                <a href="{{ route('filament.resources.creditos.edit', ['record' => $cliente->creditos->first()->id_credito]) }}"
-                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Editar Crédito
-                </a>
+                {{-- Grupo para el botón Editar Crédito y el Dropdown de Acciones --}}
+                <div class="flex items-center space-x-2">
+                    <a href="{{ route('filament.resources.creditos.edit', ['record' => $cliente->creditos->first()->id_credito]) }}"
+                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Editar Crédito
+                    </a>
+
+                    <!-- Contenedor del Dropdown de Acciones -->
+                    <div x-data="{ open: false }" class="relative inline-block text-left z-20">
+                        <div>
+                            <button type="button" @click="open = !open"
+                                class="inline-flex justify-center items-center rounded-md border border-gray-300 shadow-sm px-3 py-1 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                id="menu-button" aria-expanded="true" aria-haspopup="true">
+                                Acciones
+                                <svg class="-mr-1 ml-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Panel del Dropdown -->
+                        <div x-show="open" @click.away="open = false"
+                            x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="transform opacity-0 scale-95"
+                            x-transition:enter-end="transform opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="transform opacity-100 scale-100"
+                            x-transition:leave-end="transform opacity-0 scale-95"
+                            class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-30"
+                            role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">
+                            <div class="py-1" role="none">
+                                <a href="{{ route('filament.resources.creditos.create', ['cliente_id' => $cliente->id_cliente]) }}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-0">Nuevo Préstamo</a>
+                                <a href="{{ route('filament.resources.creditos.edit', ['record' => $cliente->creditos->first()->id_credito]) }}"
+                                    class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                                    role="menuitem" tabindex="-1" id="menu-item-1">
+                                    Baja de Cuenta
+                                </a>
+                                <a href="#" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-2">Cancelado</a>
+                                <a href="#" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-3">Renovación</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 @else
                 <a href="{{ route('filament.resources.creditos.create', ['cliente_id' => $cliente->id_cliente]) }}"
                     class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
@@ -89,5 +129,6 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                 </div>
             </div>
         </div>
+
     </div>
     @endif
