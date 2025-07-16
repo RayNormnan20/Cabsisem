@@ -184,5 +184,20 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->belongsToMany(Ruta::class, 'revisador_ruta', 'user_id', 'id_ruta')
             ->withPivot(['permisos']);
     }
+    // En app/Models/User.php
+    public function ruta()
+    {
+        return $this->belongsTo(Ruta::class, 'id_ruta');
+    }
+
+  
+
+    /**
+     * Verificar si es cobrador de una ruta específica
+    */
+    public function esCobradorDeRuta($rutaId)
+    {
+        return $this->rutas()->where('id_ruta', $rutaId)->exists();
+    }
 
 }

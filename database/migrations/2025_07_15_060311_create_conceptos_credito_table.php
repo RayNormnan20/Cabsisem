@@ -14,7 +14,7 @@ class CreateConceptosCreditoTable extends Migration
             $table->unsignedBigInteger('id_credito');
             $table->string('tipo_concepto');
             $table->decimal('monto', 10, 2);
-            $table->string('foto_comprobante')->nullable(); // Solo para Yape
+            $table->string('foto_comprobante')->nullable(); // Solo para Yape Y EFECTIVI
             $table->unsignedBigInteger('id_credito_anterior')->nullable(); // Para renovación
             $table->unsignedBigInteger('id_caja')->nullable(); // Para caja
 

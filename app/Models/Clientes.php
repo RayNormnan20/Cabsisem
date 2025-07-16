@@ -31,9 +31,9 @@ class Clientes extends Model
         'activo' => 'boolean',
     ];
 
-     public function tipoDocumento()
+    public function tipoDocumento()
     {
-        return $this->belongsTo(TipoDocumento::class, 'id_tipo_documento', 'id_tipo_documento');
+        return $this->belongsTo(TipoDocumento::class, 'id_tipo_documento');
     }
 
     public function creditos()
@@ -41,10 +41,30 @@ class Clientes extends Model
         return $this->hasMany(Creditos::class, 'id_cliente');
     }
 
+    // Relación directa con abonos (si la tabla abonos tiene id_cliente)
+    public function abonosDirectos()
+    {
+        return $this->hasMany(Abonos::class, 'id_cliente');
+    }
+
+    // Relación a través de créditos
+    public function abonos()
+    {
+        return $this->hasManyThrough(
+            Abonos::class,
+            Creditos::class,
+            'id_cliente', // FK en créditos
+            'id_credito', // FK en abonos
+            'id_cliente', // PK en clientes
+            'id_credito'  // PK en créditos
+        );
+    }
+
     public function getNombreCompletoAttribute()
     {
         return "{$this->nombre} {$this->apellido}";
     }
+
     public function scopeDeRuta($query, $rutaId)
     {
         return $query->whereHas('creditos', function($q) use ($rutaId) {

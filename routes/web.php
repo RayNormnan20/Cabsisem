@@ -49,7 +49,7 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     });
 });
-
+/*
 
 Route::middleware(['auth'])->group(function () {
     // Rutas comunes
@@ -73,3 +73,4 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rutas/{ruta}/reportes', [RutaController::class, 'reportes'])->name('rutas.reports');
     });
 });
+*/

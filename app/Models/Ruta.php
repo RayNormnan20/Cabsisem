@@ -126,4 +126,15 @@ class Ruta extends Model
     {
         return $this->id_usuario == $userId;
     }
+    public function abonos()
+{
+    return $this->hasManyThrough(
+        Abonos::class,
+        Creditos::class,
+        'id_ruta', // FK en créditos
+        'id_credito', // FK en abonos
+        'id_ruta', // PK en ruta
+        'id_credito' // PK en créditos
+    );
+}
 }

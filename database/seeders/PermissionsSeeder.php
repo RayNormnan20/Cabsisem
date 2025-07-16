@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Clientes;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -13,7 +14,7 @@ use Illuminate\Support\Str;
 class PermissionsSeeder extends Seeder
 {
     private array $modules = [
-        'Permisos', 'Rol',   'Usuario'
+        'Permisos', 'Rol',   'Usuario', 'Clientes', 'Oficcina', 'Ruta', 'Creditos'
 
     ];
 
@@ -30,7 +31,7 @@ class PermissionsSeeder extends Seeder
         'List timesheet data', 'View timesheet dashboard'
     ];
 
-    private string $defaultRole = 'Default role';
+    private string $defaultRole = 'Administrador';
 
     /**
      * Run the database seeds.

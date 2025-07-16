@@ -38,77 +38,26 @@ class Creditos extends Model
         'fecha_proximo_pago' => 'date'
     ];
 
-    /**
-     * Relación con el cliente
-     */
     public function cliente()
     {
         return $this->belongsTo(Clientes::class, 'id_cliente');
     }
 
-    /**
-     * Relación con tipo de pago (forma_pago)
-     */
     public function tipoPago()
     {
-        return $this->belongsTo(TipoPago::class, 'forma_pago', 'id_forma_pago');
+        return $this->belongsTo(TipoPago::class, 'forma_pago');
     }
 
-    /**
-     * Relación con orden de cobro
-     */
     public function ordenCobro()
     {
-        return $this->belongsTo(OrdenCobro::class, 'orden_cobro', 'id_orden_cobro');
+        return $this->belongsTo(OrdenCobro::class, 'orden_cobro');
     }
 
-    /**
-     * Scope para créditos activos (con saldo pendiente)
-     */
-    public function scopeActivos($query)
+    public function abonos()
     {
-        return $query->where('saldo_actual', '>', 0);
+        return $this->hasMany(Abonos::class, 'id_credito');
     }
 
-    /**
-     * Scope para créditos pagados
-     */
-    public function scopePagados($query)
-    {
-        return $query->where('saldo_actual', '<=', 0);
-    }
-
-    /**
-     * Calcular el interés total del crédito
-     */
-    public function getInteresTotalAttribute()
-    {
-        return $this->valor_credito * ($this->porcentaje_interes / 100);
-    }
-
-    /**
-     * Obtener el monto total a pagar (capital + interés)
-     */
-    public function getMontoTotalAttribute()
-    {
-        return $this->valor_credito + $this->interes_total;
-    }
-
-    /**
-     * Obtener el número de cuotas pagadas
-     */
-    public function getCuotasPagadasAttribute()
-    {
-        return $this->abonos()->count();
-    }
-
-    /**
-     * Obtener el número de cuotas pendientes
-     */
-    public function getCuotasPendientesAttribute()
-    {
-        return $this->numero_cuotas - $this->cuotas_pagadas;
-    }
     public function conceptosCredito()
     {
         return $this->hasMany(ConceptoCredito::class, 'id_credito');
@@ -119,9 +68,45 @@ class Creditos extends Model
         return $this->belongsTo(Ruta::class, 'id_ruta');
     }
 
+    public function scopeActivos($query)
+    {
+        return $query->where('saldo_actual', '>', 0);
+    }
+
+    public function scopePagados($query)
+    {
+        return $query->where('saldo_actual', '<=', 0);
+    }
+
+    public function getInteresTotalAttribute()
+    {
+        return $this->valor_credito * ($this->porcentaje_interes / 100);
+    }
+
+    public function getMontoTotalAttribute()
+    {
+        return $this->valor_credito + $this->interes_total;
+    }
+
+    public function getCuotasPagadasAttribute()
+    {
+        return $this->abonos()->count();
+    }
+
+    public function getCuotasPendientesAttribute()
+    {
+        return max(0, $this->numero_cuotas - $this->cuotas_pagadas);
+    }
+
     public function scopeDeRuta($query, $rutaId)
     {
         return $query->where('id_ruta', $rutaId);
     }
 
+    public function actualizarSaldo()
+    {
+        $this->saldo_actual = $this->valor_credito - $this->abonos()->sum('monto_abono');
+        $this->save();
+    }
+    
 }
