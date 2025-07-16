@@ -17,8 +17,10 @@ class CreateCreditos extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Validaciones básicas
-        if (empty($data['valor_credito']) || empty($data['porcentaje_interes']) ||
-            empty($data['dias_plazo']) || empty($data['forma_pago'])) {
+        if (
+            empty($data['valor_credito']) || empty($data['porcentaje_interes']) ||
+            empty($data['dias_plazo']) || empty($data['forma_pago'])
+        ) {
             throw new \Exception('Todos los campos requeridos deben estar completos');
         }
 

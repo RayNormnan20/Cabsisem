@@ -7,6 +7,7 @@ use App\Models\Clientes;
 use App\Models\Creditos;
 use App\Models\OrdenCobro;
 use App\Models\TipoPago;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Card;
 use Filament\Forms\Components\DatePicker;
@@ -37,6 +38,74 @@ class CreditosResource extends Resource
     protected static function getNavigationGroup(): ?string
     {
         return __('Créditos');
+    }
+
+    
+    protected static function calculateCreditValues(
+        float $valorCredito,
+        float $porcentajeInteres,
+        int $diasPlazo,
+        ?string $formaPagoNombre,
+        ?string $fechaCreditoStr,
+        callable $set
+    ): void {
+        if ($valorCredito === null || $valorCredito <= 0 || $porcentajeInteres === null || $diasPlazo === null || $diasPlazo <= 0 || !$fechaCreditoStr) {
+            $set('saldo_actual', null);
+            $set('valor_cuota', null);
+            $set('numero_cuotas', null);
+            $set('fecha_vencimiento', null);
+            $set('fecha_proximo_pago', null);
+            return;
+        }
+
+        $valorTotal = $valorCredito * (1 + ($porcentajeInteres / 100));
+        $set('saldo_actual', number_format($valorTotal, 2, '.', '')); 
+
+        $numeroCuotas = 0;
+        switch (strtolower($formaPagoNombre)) {
+            case 'diario':
+                $numeroCuotas = $diasPlazo;
+                break;
+            case 'semanal':
+                $numeroCuotas = ceil($diasPlazo / 7);
+                break;
+            case 'quincenal':
+                $numeroCuotas = ceil($diasPlazo / 15);
+                break;
+            case 'mensual':
+                $numeroCuotas = ceil($diasPlazo / 30);
+                break;
+            default:
+                $numeroCuotas = $diasPlazo;
+        }
+
+        $numeroCuotas = max(1, $numeroCuotas); 
+        $set('numero_cuotas', (int) $numeroCuotas); 
+
+        $valorCuota = $valorTotal / $numeroCuotas;
+        $set('valor_cuota', number_format($valorCuota, 2, '.', '')); 
+
+        $fechaCredito = Carbon::parse($fechaCreditoStr);
+        $set('fecha_vencimiento', $fechaCredito->copy()->addDays($diasPlazo)->format('Y-m-d'));
+
+        $nextPago = $fechaCredito->copy();
+        switch (strtolower($formaPagoNombre)) {
+            case 'diario':
+                $nextPago->addDay();
+                break;
+            case 'semanal':
+                $nextPago->addWeek();
+                break;
+            case 'quincenal':
+                $nextPago->addDays(15);
+                break;
+            case 'mensual':
+                $nextPago->addMonth();
+                break;
+            default:
+                $nextPago->addDay();
+        }
+        $set('fecha_proximo_pago', $nextPago->format('Y-m-d'));
     }
 
     public static function form(Form $form): Form
@@ -81,7 +150,16 @@ class CreditosResource extends Resource
                                             ->default(now())
                                             ->required()
                                             ->displayFormat('d/m/Y')
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->reactive() 
+                                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                                $valorCredito = (float) $get('valor_credito');
+                                                $porcentaje = (float) $get('porcentaje_interes');
+                                                $dias = (int) $get('dias_plazo');
+                                                $formaPagoId = $get('forma_pago');
+                                                $formaPagoNombre = $formaPagoId ? TipoPago::find($formaPagoId)->nombre : null;
+                                                static::calculateCreditValues($valorCredito, $porcentaje, $dias, $formaPagoNombre, $state, $set);
+                                            }),
 
                                         TextInput::make('valor_credito')
                                             ->label('Valor del Crédito *')
@@ -89,7 +167,16 @@ class CreditosResource extends Resource
                                             ->required()
                                             ->minValue(1)
                                             ->columnSpanFull()
-                                            ->helperText('Por favor ingresa el valor de Crédito'),
+                                            ->helperText('Por favor ingresa el valor de Crédito')
+                                            ->reactive() 
+                                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                                $porcentaje = (float) $get('porcentaje_interes');
+                                                $dias = (int) $get('dias_plazo');
+                                                $formaPagoId = $get('forma_pago');
+                                                $formaPagoNombre = $formaPagoId ? TipoPago::find($formaPagoId)->nombre : null;
+                                                $fechaCreditoStr = $get('fecha_credito');
+                                                static::calculateCreditValues((float) $state, $porcentaje, $dias, $formaPagoNombre, $fechaCreditoStr, $set);
+                                            }),
 
                                         TextInput::make('porcentaje_interes')
                                             ->label('Porcentaje *')
@@ -97,21 +184,48 @@ class CreditosResource extends Resource
                                             ->required()
                                             ->minValue(0)
                                             ->maxValue(100)
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->reactive() 
+                                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                                $valorCredito = (float) $get('valor_credito');
+                                                $dias = (int) $get('dias_plazo');
+                                                $formaPagoId = $get('forma_pago');
+                                                $formaPagoNombre = $formaPagoId ? TipoPago::find($formaPagoId)->nombre : null;
+                                                $fechaCreditoStr = $get('fecha_credito');
+                                                static::calculateCreditValues($valorCredito, (float) $state, $dias, $formaPagoNombre, $fechaCreditoStr, $set);
+                                            }),
 
                                         Select::make('forma_pago')
                                             ->label('Forma de Pago *')
                                             ->options(TipoPago::where('activo', true)->pluck('nombre', 'id_forma_pago'))
                                             ->required()
                                             ->searchable()
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->reactive() 
+                                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                                $valorCredito = (float) $get('valor_credito');
+                                                $porcentaje = (float) $get('porcentaje_interes');
+                                                $dias = (int) $get('dias_plazo');
+                                                $formaPagoNombre = $state ? TipoPago::find($state)->nombre : null;
+                                                $fechaCreditoStr = $get('fecha_credito');
+                                                static::calculateCreditValues($valorCredito, $porcentaje, $dias, $formaPagoNombre, $fechaCreditoStr, $set);
+                                            }),
 
                                         TextInput::make('dias_plazo')
                                             ->label('Días *')
                                             ->numeric()
                                             ->required()
                                             ->minValue(1)
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                                $valorCredito = (float) $get('valor_credito');
+                                                $porcentaje = (float) $get('porcentaje_interes');
+                                                $formaPagoId = $get('forma_pago');
+                                                $formaPagoNombre = $formaPagoId ? TipoPago::find($formaPagoId)->nombre : null;
+                                                $fechaCreditoStr = $get('fecha_credito');
+                                                static::calculateCreditValues($valorCredito, $porcentaje, (int) $state, $formaPagoNombre, $fechaCreditoStr, $set);
+                                            }),
 
                                         Select::make('orden_cobro')
                                             ->label('Orden de Cobro')
