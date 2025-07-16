@@ -62,6 +62,7 @@ php artisan make:migration create_creditos_table
 
 php artisan make:migration create_conceptos_credito_table
 php artisan make:migration create_abonos_table
+php artisan make:migration create_usuario_ruta_table
 
 
 

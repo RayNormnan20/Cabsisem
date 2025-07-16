@@ -45,11 +45,13 @@ class Ruta extends Model
         return $this->belongsTo(Oficina::class, 'id_oficina', 'id_oficina');
     }
 
-    // Relación con Usuario (vendedor)
-    public function usuario()
-    {
-        return $this->belongsTo(User::class, 'id_usuario', 'id');
-    }
+
+// Agrega esta relación al modelo
+public function usuarios()
+{
+    return $this->belongsToMany(User::class, 'usuario_ruta', 'id_ruta', 'id_usuario');
+}
+
 
     // Relación con TipoDocumento
     public function tipoDocumento()
@@ -88,6 +90,21 @@ class Ruta extends Model
     }
 
     /**
+     * Relación con abonos a través de créditos
+     */
+    public function abonos()
+    {
+        return $this->hasManyThrough(
+            Abonos::class,
+            Creditos::class,
+            'id_ruta', // FK en créditos
+            'id_credito', // FK en abonos
+            'id_ruta', // PK en ruta
+            'id_credito' // PK en créditos
+        );
+    }
+
+    /**
      * Scope para rutas activas
      */
     public function scopeActivas($query)
@@ -96,11 +113,13 @@ class Ruta extends Model
     }
 
     /**
-     * Scope para rutas de un usuario específico
+     * Scope para rutas de un usuario específico (ahora usa la relación muchos-a-muchos)
      */
     public function scopeDeUsuario($query, $userId)
     {
-        return $query->where('id_usuario', $userId);
+        return $query->whereHas('usuarios', function($q) use ($userId) {
+            $q->where('users.id', $userId);
+        });
     }
 
     /**
@@ -120,21 +139,18 @@ class Ruta extends Model
     }
 
     /**
-     * Verificar si la ruta pertenece a un usuario
+     * Verificar si la ruta pertenece a un usuario (ahora verifica la relación muchos-a-muchos)
      */
     public function perteneceAUsuario($userId)
     {
-        return $this->id_usuario == $userId;
+        return $this->usuarios()->where('users.id', $userId)->exists();
     }
-    public function abonos()
-{
-    return $this->hasManyThrough(
-        Abonos::class,
-        Creditos::class,
-        'id_ruta', // FK en créditos
-        'id_credito', // FK en abonos
-        'id_ruta', // PK en ruta
-        'id_credito' // PK en créditos
-    );
-}
+
+    /**
+     * Obtener el usuario principal (alias para compatibilidad)
+     */
+    public function getUsuarioAttribute()
+    {
+        return $this->usuarioPrincipal;
+    }
 }

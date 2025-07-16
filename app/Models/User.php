@@ -36,23 +36,25 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'apellidos',
         'email',
         'celular',
-        'password', //
+        'password',
         'is_active',
         'creation_token',
         'type',
         'oidc_username',
         'oidc_sub',
         'email_verified_at',
-        'two_factor_secret', //
-        'two_factor_recovery_codes', //
+        'two_factor_secret',
+        'two_factor_recovery_codes',
         'two_factor_confirmed_at',
-        'remember_token', //
+        'remember_token',
         'is_vendedor',
         'vendedor_id',
         'fecha_ingreso',
         'fecha_egreso',
         'comision',
         'perfil',
+        'id_oficina',
+        'id_ruta' // Mantener para compatibilidad
     ];
 
     /**
@@ -100,7 +102,52 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         });
     }
 
+    /**
+     * Relación muchos-a-muchos con rutas (NUEVA)
+     */
+    public function rutas()
+{
+    return $this->belongsToMany(Ruta::class, 'usuario_ruta', 'user_id', 'id_ruta')
+               ->withPivot('es_principal')
+               ->withTimestamps();
+}
 
+    /**
+     * Relación con clientes creados por este usuario (NUEVA)
+     */
+    public function clientesCreados()
+    {
+        return $this->hasMany(Clientes::class, 'id_usuario_creador');
+    }
+
+    /**
+     * Relación con la oficina asignada
+     */
+    public function oficina()
+    {
+        return $this->belongsTo(Oficina::class, 'id_oficina');
+    }
+
+    /**
+     * Relación con rutas revisables (para supervisores)
+     */
+    public function rutasRevisables()
+    {
+        return $this->belongsToMany(Ruta::class, 'revisador_ruta', 'user_id', 'id_ruta')
+                   ->withPivot(['permisos']);
+    }
+
+    /**
+     * Relación con redes sociales (OAuth)
+     */
+    public function socials()
+    {
+        return $this->hasMany(SocialiteUser::class, 'user_id', 'id');
+    }
+
+    /**
+     * Accesor para verificar si es vendedor
+     */
     public function isVendedor(): Attribute
     {
         return new Attribute(
@@ -117,42 +164,9 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
                     ->orWhereNotNull('vendedor_id');
     }
 
-    // Relaciones existentes
-    public function projectsOwning(): HasMany
-    {
-        return $this->hasMany(Project::class, 'owner_id', 'id');
-    }
-
-    public function projectsAffected(): BelongsToMany
-    {
-        return $this->belongsToMany(Project::class, 'project_users', 'user_id', 'project_id')->withPivot(['role']);
-    }
-
-    public function favoriteProjects(): BelongsToMany
-    {
-        return $this->belongsToMany(Project::class, 'project_favorites', 'user_id', 'project_id');
-    }
-
-    public function ticketsOwned(): HasMany
-    {
-        return $this->hasMany(Ticket::class, 'owner_id', 'id');
-    }
-
-    public function ticketsResponsible(): HasMany
-    {
-        return $this->hasMany(Ticket::class, 'responsible_id', 'id');
-    }
-
-    public function socials(): HasMany
-    {
-        return $this->hasMany(SocialiteUser::class, 'user_id', 'id');
-    }
-
-    public function hours(): HasMany
-    {
-        return $this->hasMany(TicketHour::class, 'user_id', 'id');
-    }
-
+    /**
+     * Accesor para horas logueadas (ejemplo)
+     */
     public function totalLoggedInHours(): Attribute
     {
         return new Attribute(
@@ -162,42 +176,27 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         );
     }
 
-    // En el modelo User.php
-    public function rutas()
-    {
-        return $this->hasMany(Ruta::class, 'id_usuario');
-    }
-
-
-    public function canAccessFilament(): bool
-    {
-        return true;
-    }
-
-    public function oficina()
-    {
-        return $this->belongsTo(Oficina::class, 'id_oficina');
-    }
-
-    public function rutasRevisables()
-    {
-        return $this->belongsToMany(Ruta::class, 'revisador_ruta', 'user_id', 'id_ruta')
-            ->withPivot(['permisos']);
-    }
-    // En app/Models/User.php
-    public function ruta()
-    {
-        return $this->belongsTo(Ruta::class, 'id_ruta');
-    }
-
-  
-
     /**
-     * Verificar si es cobrador de una ruta específica
-    */
+     * Verificar si es cobrador de una ruta específica (ACTUALIZADA)
+     */
     public function esCobradorDeRuta($rutaId)
     {
         return $this->rutas()->where('id_ruta', $rutaId)->exists();
     }
 
+    /**
+     * Obtener la ruta principal (para compatibilidad)
+     */
+    public function getRutaPrincipalAttribute()
+    {
+        return $this->rutas()->wherePivot('es_principal', true)->first();
+    }
+
+    /**
+     * Acceso a Filament
+     */
+    public function canAccessFilament(): bool
+    {
+        return true;
+    }
 }

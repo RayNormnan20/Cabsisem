@@ -97,15 +97,17 @@ class RutasResource extends Resource
                             ->maxLength(255),
                     ]),
 
-                // Sección 4: Usuarios asignados
-                Section::make('Usuarios Asignados')
-                    ->schema([
-                        Select::make('id_usuario')
-                            ->label('Seleccione el usuario asignado')
-                            ->options(User::all()->pluck('name', 'id'))
-                            ->searchable()
-                            ->required(),
-                    ]),
+                // En el formulario
+                // En App\Filament\Resources\RutasResource
+
+                Select::make('usuarios') // Cambiado de 'usuario' a 'usuarios'
+                    ->relationship('usuarios', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->searchable()
+                    ->required(),
+
+
 
                 // Sección 5: Opciones adicionales
                 Section::make('Opciones Adicionales')

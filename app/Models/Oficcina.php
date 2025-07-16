@@ -56,4 +56,10 @@ class Oficina extends Model
     {
         return $this->hasOne(ConfiguracionAbonos::class, 'id_oficina');
     }
+
+    public function rutas()
+    {
+        return $this->hasMany(Ruta::class, 'id_oficina');
+    }
+
 }
