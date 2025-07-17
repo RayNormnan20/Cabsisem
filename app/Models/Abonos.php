@@ -22,11 +22,9 @@ class Abonos extends Model
         'monto_abono',
         'saldo_anterior',
         'saldo_posterior',
-        'numero_cuota',
         'coordenadas_gps',
         'observaciones',
-        'estado',
-        'es_cuota_completa'
+        'estado'
     ];
 
     protected $casts = [
@@ -34,12 +32,10 @@ class Abonos extends Model
         'monto_abono' => 'decimal:2',
         'saldo_anterior' => 'decimal:2',
         'saldo_posterior' => 'decimal:2',
-        'es_cuota_completa' => 'boolean',
         'coordenadas_gps' => 'array'
     ];
 
-    const ESTADO_REGISTRADO = 'registrado';
-    const ESTADO_APROBADO = 'aprobado';
+    const ESTADO_REGISTRADO = 'Abonado';
     const ESTADO_ANULADO = 'anulado';
 
     public function credito()
@@ -74,30 +70,34 @@ class Abonos extends Model
 
     public function getEstaCompletoAttribute()
     {
-        return abs($this->total_abonado - $this->monto_abono) < 0.01; // Considera decimales
+        return abs($this->total_abonado - $this->monto_abono) < 0.01;
     }
 
     public function getMetodosPagoAttribute()
     {
         return $this->conceptos->pluck('tipo_concepto')->unique()->implode(', ');
     }
+    // En el modelo Abonos.php
+    public function conceptosabonos()
+    {
+        return $this->hasMany(ConceptoAbono::class, 'id_abono');
+    }
 
     public static function registrarConConceptos(array $datosAbono, array $conceptos)
     {
         return DB::transaction(function () use ($datosAbono, $conceptos) {
-            // Validar crédito
             if (empty($datosAbono['id_credito'])) {
                 throw new \Exception('Debe especificar un crédito para el abono');
             }
 
             $abono = self::create($datosAbono);
-            
+
             foreach ($conceptos as $concepto) {
                 $abono->conceptos()->create($concepto);
             }
-            
+
             $abono->actualizarSaldos();
-            
+
             return $abono;
         });
     }
@@ -106,7 +106,7 @@ class Abonos extends Model
     {
         $this->saldo_posterior = $this->saldo_anterior - $this->total_abonado;
         $this->save();
-        
+
         $this->credito->actualizarSaldo();
     }
 
@@ -123,12 +123,12 @@ class Abonos extends Model
                     'conceptos' => $abono->conceptos->map(function ($concepto) {
                         return [
                             'tipo' => $concepto->tipo_concepto,
-                            'monto' => 'S/ '.number_format($concepto->monto, 2),
+                            'monto' => 'S/ ' . number_format($concepto->monto, 2),
                             'comprobante' => $concepto->foto_comprobante
                         ];
                     }),
-                    'total' => 'S/ '.number_format($abono->total_abonado, 2),
-                    'saldo' => 'S/ '.number_format($abono->saldo_posterior, 2),
+                    'total' => 'S/ ' . number_format($abono->total_abonado, 2),
+                    'saldo' => 'S/ ' . number_format($abono->saldo_posterior, 2),
                     'usuario' => $abono->usuario->name,
                     'gps' => $abono->coordenadas_gps ? '✔' : ''
                 ];

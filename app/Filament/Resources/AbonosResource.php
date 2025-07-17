@@ -75,26 +75,26 @@ class AbonosResource extends Resource
                 ->numeric()
                 ->disabled(),
                 
-            Forms\Components\Repeater::make('conceptos')
+           Repeater::make('conceptosabonos')
                 ->label('Métodos de Pago')
-                ->relationship()
+                ->relationship('conceptosabonos')
                 ->schema([
-                    Forms\Components\Select::make('tipo_concepto')
-                        ->label('Método')
+                    Select::make('tipo_concepto') 
                         ->options([
                             'Efectivo' => 'Efectivo',
+                            'Transferencia' => 'Transferencia',
                             'Yape' => 'Yape',
                             'Plin' => 'Plin',
-                            'Transferencia' => 'Transferencia',
+                            'Tarjeta' => 'Tarjeta',
                         ])
-                        ->required()
-                        ->reactive(),
-                        
-                    Forms\Components\TextInput::make('monto')
+                        ->required(),
+               
+
+                    TextInput::make('monto')
                         ->label('Monto')
                         ->numeric()
                         ->required(),
-                        
+    
                     Forms\Components\FileUpload::make('foto_comprobante')
                         ->label('Comprobante')
                         ->image()
@@ -122,22 +122,31 @@ class AbonosResource extends Resource
                     ->label('Fecha')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
-                    
+
+                TextColumn::make('usuario.name')
+                    ->label('Usuario'),
+        
                 TextColumn::make('cliente.nombre')
                     ->label('Cliente')
                     ->searchable(),
+
+                    TextColumn::make('estado')
+                    ->label('Concepto'),
                     
                 TextColumn::make('monto_abono')
-                    ->label('Monto')
-                    ->money('PEN')
-                    ->sortable(),
+                    ->label('Monto'),
+                    //->money('PEN')
+                   // ->sortable(),
+
+                    /*
                     
                 TextColumn::make('conceptos.tipo_concepto')
                     ->label('Métodos')
                     ->formatStateUsing(fn ($state) => implode(', ', $state->unique()->toArray())),
+
+                    */
                     
-                TextColumn::make('usuario.name')
-                    ->label('Registrado por'),
+                
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('cliente')
@@ -164,10 +173,8 @@ class AbonosResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\ViewAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
             ]);
+           
     }
     
     public static function getRelations(): array
