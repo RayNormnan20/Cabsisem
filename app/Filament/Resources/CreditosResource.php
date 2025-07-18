@@ -399,18 +399,16 @@ class CreditosResource extends Resource
                     ->icon('heroicon-s-trash')
                     ->color('danger'),
 
-                // NUEVA ACCIÓN: Baja de Cuenta con modal de input
-                Action::make('baja_cuenta')
+                // Esto es de prueba pero no necesario XD, igual lo dejo aca
+                /* Action::make('baja_cuenta')
                     ->label('Baja de Cuenta')
-                    ->icon('heroicon-s-x-circle') // Un icono adecuado para "baja"
-                    ->color('warning') // O 'danger' si es una acción más drástica
+                    ->icon('heroicon-s-x-circle')
+                    ->color('warning') 
                     ->modalHeading('Dar de Baja Crédito')
-                    // ->modalDescription('Por favor, ingresa los detalles para dar de baja este crédito.') // ELIMINADO: Este método no existe en tu versión de Filament
                     ->form([
-                        // Si necesitas una descripción, puedes usar Forms\Components\Placeholder
                         Forms\Components\Placeholder::make('modal_description')
                             ->content('Por favor, ingresa los detalles para dar de baja este crédito.')
-                            ->columnSpanFull(), // Asegura que ocupe todo el ancho si el formulario tiene columnas
+                            ->columnSpanFull(),
                         Forms\Components\DatePicker::make('fecha_baja')
                             ->label('Fecha de Baja *')
                             ->default(now())
@@ -424,26 +422,23 @@ class CreditosResource extends Resource
                         Forms\Components\TextInput::make('monto_pendiente_baja')
                             ->label('Monto Pendiente al dar de Baja (opcional)')
                             ->numeric()
-                            ->default(fn (Creditos $record) => $record->saldo_actual) // Pre-llenar con el saldo actual
+                            ->default(fn (Creditos $record) => $record->saldo_actual)
                             ->helperText('Este es el saldo que queda al momento de la baja. Puede ajustarse si es necesario.'),
                     ])
                     ->action(function (array $data, Creditos $record): void {
-                        // Lógica para dar de baja el crédito
                         $record->update([
-                            'estado' => 'Baja', // Asume que tienes un campo 'estado' en tu modelo Creditos
+                            'estado' => 'Baja', 
                             'fecha_baja' => $data['fecha_baja'],
                             'motivo_baja' => $data['motivo_baja'],
-                            'saldo_actual' => $data['monto_pendiente_baja'] ?? 0, // Actualiza el saldo final
-                            // Puedes añadir más campos si los necesitas, como 'usuario_baja_id'
+                            'saldo_actual' => $data['monto_pendiente_baja'] ?? 0,
                         ]);
 
-                        // Opcional: Emitir una notificación de éxito
                         \Filament\Notifications\Notification::make()
                             ->title('Crédito dado de baja exitosamente')
                             ->success()
                             ->send();
                     })
-                    ->visible(fn (Creditos $record): bool => $record->saldo_actual > 0),
+                    ->visible(fn (Creditos $record): bool => $record->saldo_actual > 0), */
             ])
 
             ->bulkActions([]);

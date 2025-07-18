@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CreditosResource\Pages;
 
 use App\Filament\Resources\CreditosResource;
+use App\Models\Creditos;
 use App\Models\TipoPago;
 use Carbon\Carbon;
 use Filament\Pages\Actions;
@@ -113,4 +114,9 @@ class CreateCreditos extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
+
+    
+
+
+
 }

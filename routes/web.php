@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Route;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use App\Http\Controllers\RoadMap\DataController;
 use App\Http\Controllers\Auth\OidcAuthController;
-    use App\Http\Controllers\RutaController;
+use App\Http\Controllers\CreditoController;
+use App\Http\Controllers\RutaController;
 use App\Http\Middleware\CheckRutaAccess;
 
 // Share ticket
@@ -49,6 +50,10 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     });
 });
+
+Route::post('/creditos/actualizar', [CreditoController::class, 'actualizarDatosCredito'])->name('creditos.actualizar');
+
+
 /*
 
 Route::middleware(['auth'])->group(function () {
