@@ -103,6 +103,8 @@ return array(
     'App\\Listeners\\SocialRegistration' => $baseDir . '/app/Listeners/SocialRegistration.php',
     'App\\Models\\Abonos' => $baseDir . '/app/Models/Abonos.php',
     'App\\Models\\Clientes' => $baseDir . '/app/Models/Clientes.php',
+    'App\\Models\\Concepto' => $baseDir . '/app/Models/Concepto.php',
+    'App\\Models\\ConceptoAbono' => $baseDir . '/app/Models/ConceptoAbono.php',
     'App\\Models\\ConceptoCredito' => $baseDir . '/app/Models/ConceptoCredito.php',
     'App\\Models\\ConfiguracionAbonos' => $baseDir . '/app/Models/ConfiguracionAbonos.php',
     'App\\Models\\Creditos' => $baseDir . '/app/Models/Creditos.php',

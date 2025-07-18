@@ -929,6 +929,8 @@ class ComposerStaticInit10792816e5e2dda5bd11767ecd0bbbfc
         'App\\Listeners\\SocialRegistration' => __DIR__ . '/../..' . '/app/Listeners/SocialRegistration.php',
         'App\\Models\\Abonos' => __DIR__ . '/../..' . '/app/Models/Abonos.php',
         'App\\Models\\Clientes' => __DIR__ . '/../..' . '/app/Models/Clientes.php',
+        'App\\Models\\Concepto' => __DIR__ . '/../..' . '/app/Models/Concepto.php',
+        'App\\Models\\ConceptoAbono' => __DIR__ . '/../..' . '/app/Models/ConceptoAbono.php',
         'App\\Models\\ConceptoCredito' => __DIR__ . '/../..' . '/app/Models/ConceptoCredito.php',
         'App\\Models\\ConfiguracionAbonos' => __DIR__ . '/../..' . '/app/Models/ConfiguracionAbonos.php',
         'App\\Models\\Creditos' => __DIR__ . '/../..' . '/app/Models/Creditos.php',

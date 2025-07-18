@@ -38,6 +38,7 @@ php artisan make:filament-resource Creditos
 php artisan make:filament-resource LogActividadResource
 php artisan make:filament-resource Clientes
 php artisan make:filament-resource abonos
+php artisan make:filament-resource Conceptos
 
 
 

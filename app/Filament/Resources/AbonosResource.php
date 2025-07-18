@@ -114,69 +114,53 @@ class AbonosResource extends Resource
         ]);
 }
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                TextColumn::make('fecha_pago')
-                    ->label('Fecha')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable(),
 
-                TextColumn::make('usuario.name')
-                    ->label('Usuario'),
-        
-                TextColumn::make('cliente.nombre')
-                    ->label('Cliente')
-                    ->searchable(),
+public static function table(Table $table): Table
+{
+    return $table
+        ->columns([
+            TextColumn::make('fecha_pago')
+                ->label('Fecha')
+                ->dateTime('d/m/Y H:i')
+                ->sortable(),
 
-                    TextColumn::make('estado')
-                    ->label('Concepto'),
-                    
-                TextColumn::make('monto_abono')
-                    ->label('Monto'),
-                    //->money('PEN')
-                   // ->sortable(),
-
-                    /*
-                    
-                TextColumn::make('conceptos.tipo_concepto')
-                    ->label('Métodos')
-                    ->formatStateUsing(fn ($state) => implode(', ', $state->unique()->toArray())),
-
-                    */
-                    
-                
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('cliente')
-                    ->relationship('cliente', 'nombre')
-                    ->searchable(),
-                    
-                Tables\Filters\Filter::make('fecha_pago')
-                    ->form([
-                        Forms\Components\DatePicker::make('desde'),
-                        Forms\Components\DatePicker::make('hasta'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['desde'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '>=', $date),
-                            )
-                            ->when(
-                                $data['hasta'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '<=', $date),
-                            );
-                    })
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\ViewAction::make(),
-            ]);
-           
-    }
+            TextColumn::make('usuario.name')
+                ->label('Usuario'),
     
+            TextColumn::make('cliente.nombre')
+                ->label('Cliente')
+                ->searchable(),
+
+            TextColumn::make('estado')
+                ->label('Concepto'),
+                
+            TextColumn::make('monto_abono')
+                ->label('Monto'),
+        ])
+        ->filters([
+            Tables\Filters\SelectFilter::make('cliente')
+                ->relationship('cliente', 'nombre')
+                ->searchable(),
+                
+            Tables\Filters\Filter::make('fecha_pago')
+                ->form([
+                    Forms\Components\DatePicker::make('desde'),
+                    Forms\Components\DatePicker::make('hasta'),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when(
+                            $data['desde'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '>=', $date),
+                        )
+                        ->when(
+                            $data['hasta'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '<=', $date),
+                        );
+                })
+        ])
+        ->actions([]);
+}
     public static function getRelations(): array
     {
         return [
