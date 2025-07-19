@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_cliente');
             $table->unsignedBigInteger('id_ruta');
             $table->unsignedBigInteger('id_usuario');
+            $table->unsignedBigInteger('id_concepto'); // Nueva relación con conceptos
 
             // Datos del pago
             $table->dateTime('fecha_pago')->useCurrent();
@@ -27,11 +28,8 @@ return new class extends Migration
             $table->json('coordenadas_gps')->nullable();
             $table->text('observaciones')->nullable();
 
-            // Estado
-            $table->enum('estado', [
-                'Abonado',
-                'anulado'
-            ])->default('Abonado');
+            // Estado como booleano (true = completo)
+            $table->boolean('estado')->default(true);
 
             $table->timestamps();
             $table->softDeletes();
@@ -55,6 +53,11 @@ return new class extends Migration
             $table->foreign('id_usuario', 'fk_abonos_usuarios')
                   ->references('id')
                   ->on('users')
+                  ->onDelete('restrict');
+                  
+            $table->foreign('id_concepto', 'fk_abonos_conceptos')
+                  ->references('id')
+                  ->on('conceptos')
                   ->onDelete('restrict');
         });
 

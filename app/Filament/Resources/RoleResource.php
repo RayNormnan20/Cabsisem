@@ -83,8 +83,24 @@ class RoleResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('edit')
+                    ->label('')
+                    ->icon('heroicon-o-pencil-alt')
+                    ->color('primary')
+                    ->size('lg')
+                    ->url(fn ($record): string => static::getUrl('edit', ['record' => $record]))
+                    ->extraAttributes([
+                        'title' => 'Editar',
+                        'class' => 'hover:bg-primary-50 rounded-full'
+                    ]),
+
+                Tables\Actions\ViewAction::make()
+                    ->icon('heroicon-s-eye')
+                    ->color('secondary'),
+
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+
+          
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),

@@ -18,6 +18,7 @@ class Abonos extends Model
         'id_cliente',
         'id_ruta',
         'id_usuario',
+        'id_concepto', // Añadido para relación con conceptos
         'fecha_pago',
         'monto_abono',
         'saldo_anterior',
@@ -32,11 +33,10 @@ class Abonos extends Model
         'monto_abono' => 'decimal:2',
         'saldo_anterior' => 'decimal:2',
         'saldo_posterior' => 'decimal:2',
-        'coordenadas_gps' => 'array'
+        'coordenadas_gps' => 'array',
+        'estado' => 'boolean'
     ];
 
-    const ESTADO_REGISTRADO = 'Abonado';
-    const ESTADO_ANULADO = 'anulado';
 
     public function credito()
     {
@@ -58,9 +58,21 @@ class Abonos extends Model
         return $this->belongsTo(User::class, 'id_usuario');
     }
 
+    public function concepto()
+    {
+        return $this->belongsTo(Concepto::class, 'id_concepto');
+    }
+
+    // Relación con conceptos de crédito (métodos de pago)
     public function conceptos()
     {
         return $this->hasMany(ConceptoCredito::class, 'id_abono');
+    }
+
+    // Relación con conceptos de abono (alternativa)
+    public function conceptosabonos()
+    {
+        return $this->hasMany(ConceptoAbono::class, 'id_abono');
     }
 
     public function getTotalAbonadoAttribute()
@@ -70,17 +82,14 @@ class Abonos extends Model
 
     public function getEstaCompletoAttribute()
     {
-        return abs($this->total_abonado - $this->monto_abono) < 0.01;
+        // Ahora podemos usar directamente el campo estado booleano
+        // o mantener esta lógica si es diferente
+        return $this->estado && (abs($this->total_abonado - $this->monto_abono)) < 0.01;
     }
 
     public function getMetodosPagoAttribute()
     {
         return $this->conceptos->pluck('tipo_concepto')->unique()->implode(', ');
-    }
-    // En el modelo Abonos.php
-    public function conceptosabonos()
-    {
-        return $this->hasMany(ConceptoAbono::class, 'id_abono');
     }
 
     public static function registrarConConceptos(array $datosAbono, array $conceptos)
@@ -89,6 +98,18 @@ class Abonos extends Model
             if (empty($datosAbono['id_credito'])) {
                 throw new \Exception('Debe especificar un crédito para el abono');
             }
+
+            // Asegurar que el concepto "Abono" esté asignado
+            if (empty($datosAbono['id_concepto'])) {
+                $conceptoAbono = Concepto::where('nombre', 'Abono')->first();
+                if (!$conceptoAbono) {
+                    throw new \Exception('El concepto "Abono" no existe en la base de datos');
+                }
+                $datosAbono['id_concepto'] = $conceptoAbono->id;
+            }
+
+            // Estado por defecto true (completo)
+            $datosAbono['estado'] = true;
 
             $abono = self::create($datosAbono);
 
@@ -105,6 +126,10 @@ class Abonos extends Model
     public function actualizarSaldos()
     {
         $this->saldo_posterior = $this->saldo_anterior - $this->total_abonado;
+        
+        // Marcar como completo si el saldo posterior es coherente
+        $this->estado = abs($this->saldo_posterior - ($this->saldo_anterior - $this->total_abonado)) < 0.01;
+        
         $this->save();
 
         $this->credito->actualizarSaldo();
@@ -112,7 +137,7 @@ class Abonos extends Model
 
     public static function obtenerHistorialCompleto($creditoId)
     {
-        return self::with(['conceptos', 'usuario'])
+        return self::with(['conceptos', 'usuario', 'concepto'])
             ->where('id_credito', $creditoId)
             ->orderBy('fecha_pago', 'desc')
             ->get()
@@ -120,6 +145,7 @@ class Abonos extends Model
                 return [
                     'fecha' => $abono->fecha_pago->format('d/m/Y'),
                     'hora' => $abono->fecha_pago->format('H:i'),
+                    'concepto_principal' => $abono->concepto->nombre ?? 'Abono',
                     'conceptos' => $abono->conceptos->map(function ($concepto) {
                         return [
                             'tipo' => $concepto->tipo_concepto,
@@ -130,6 +156,7 @@ class Abonos extends Model
                     'total' => 'S/ ' . number_format($abono->total_abonado, 2),
                     'saldo' => 'S/ ' . number_format($abono->saldo_posterior, 2),
                     'usuario' => $abono->usuario->name,
+                    'completo' => $abono->estado ? 'Sí' : 'No',
                     'gps' => $abono->coordenadas_gps ? '✔' : ''
                 ];
             });

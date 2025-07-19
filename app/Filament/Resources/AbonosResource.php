@@ -8,11 +8,16 @@ use App\Models\Abonos;
 use App\Models\Cliente;
 use App\Models\Credito;
 use App\Models\Creditos;
+use Illuminate\Support\HtmlString;
+
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Text;
+use Filament\Forms\Components\Html;
+
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
@@ -114,7 +119,6 @@ class AbonosResource extends Resource
         ]);
 }
 
-
 public static function table(Table $table): Table
 {
     return $table
@@ -131,36 +135,103 @@ public static function table(Table $table): Table
                 ->label('Cliente')
                 ->searchable(),
 
-            TextColumn::make('estado')
-                ->label('Concepto'),
+                TextColumn::make('concepto.nombre')
+                    ->label('Concepto'),
+
+                TextColumn::make('credito.tipoPago.nombre')
+                    ->label('Forma de Pago')
+                    ->searchable(),
+                    
+                TextColumn::make('monto_abono')
+                    ->label('Cantidad')
+                    ->money('PEN', true)
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('cliente')
+                    ->relationship('cliente', 'nombre')
+                    ->searchable(),
+                    
+                Tables\Filters\Filter::make('fecha_pago')
+                    ->form([
+                        Forms\Components\DatePicker::make('desde'),
+                        Forms\Components\DatePicker::make('hasta'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['desde'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '>=', $date),
+                            )
+                            ->when(
+                                $data['hasta'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '<=', $date),
+                            );
+                    })
+            ])
+            ->actions([
+                Tables\Actions\Action::make('edit')
+                    ->label('')
+                    ->icon('heroicon-o-pencil-alt')
+                    ->color('primary')
+                    ->size('lg')
+                    ->url(fn ($record): string => static::getUrl('edit', ['record' => $record]))
+                    ->extraAttributes([
+                        'title' => 'Editar',
+                        'class' => 'hover:bg-primary-50 rounded-full'
+                    ]),
                 
-            TextColumn::make('monto_abono')
-                ->label('Monto'),
-        ])
-        ->filters([
-            Tables\Filters\SelectFilter::make('cliente')
-                ->relationship('cliente', 'nombre')
-                ->searchable(),
-                
-            Tables\Filters\Filter::make('fecha_pago')
-                ->form([
-                    Forms\Components\DatePicker::make('desde'),
-                    Forms\Components\DatePicker::make('hasta'),
-                ])
-                ->query(function (Builder $query, array $data): Builder {
-                    return $query
-                        ->when(
-                            $data['desde'],
-                            fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '>=', $date),
-                        )
-                        ->when(
-                            $data['hasta'],
-                            fn (Builder $query, $date): Builder => $query->whereDate('fecha_pago', '<=', $date),
-                        );
-                })
-        ])
-        ->actions([]);
-}
+                Tables\Actions\Action::make('view')
+                    ->label('')
+                    ->icon('heroicon-o-eye')
+                    ->color('primary')
+                    ->size('lg')
+                    ->button()
+                    ->modalHeading('Comprobante de Pago')
+                    ->form(function ($record) {
+                        $comprobante = $record->conceptosabonos->firstWhere('foto_comprobante', '!=', null);
+                        
+                        if (!$comprobante || !$comprobante->foto_comprobante) {
+                            return [
+                                \Filament\Forms\Components\Placeholder::make('no_comprobante')
+                                    ->content('<div class="p-4 text-center text-gray-500">No hay comprobante disponible</div>')
+                                    ->disableLabel()
+                            ];
+                        }
+
+                        $imageUrl = asset('storage/'.$comprobante->foto_comprobante);
+                        $html = <<<HTML
+                            <div class="flex justify-center p-4">
+                                <img src="$imageUrl" 
+                                    class="rounded-lg max-h-[80vh] cursor-pointer"
+                                    onclick="window.open(this.src, '_blank')">
+                            </div>
+                        HTML;
+
+                        return [
+                            \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    \Filament\Forms\Components\Placeholder::make('comprobante')
+                                        ->content(new HtmlString($html))
+                                        ->disableLabel()
+                                ])
+                                ->columnSpanFull()
+                        ];
+                    })
+                    ->modalWidth('4xl')
+                    ->modalButton('Cerrar')
+                    ->hidden(fn ($record) => !$record->conceptosabonos->where('foto_comprobante', '!=', null)->count())
+                    ->extraAttributes([
+                        'title' => 'Ver comprobante',
+                        'class' => 'hover:bg-success-50 rounded-full'
+                    ])
+                    ->action(function () {
+                        // Acción vacía necesaria para el modal
+                    })
+
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [

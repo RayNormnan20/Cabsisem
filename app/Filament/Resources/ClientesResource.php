@@ -6,6 +6,8 @@ use App\Filament\Resources\ClientesResource\Pages;
 use App\Models\Clientes;
 use App\Models\TipoDocumento;
 use Filament\Forms;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+
 use Filament\Forms\Components\Card;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -164,9 +166,17 @@ class ClientesResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                    ->icon('heroicon-s-pencil')
-                    ->color('primary'),
+                ExportAction::make(),
+                Tables\Actions\Action::make('edit')
+                    ->label('')
+                    ->icon('heroicon-o-pencil-alt')
+                    ->color('primary')
+                    ->size('lg')
+                    ->url(fn ($record): string => static::getUrl('edit', ['record' => $record]))
+                    ->extraAttributes([
+                        'title' => 'Editar',
+                        'class' => 'hover:bg-primary-50 rounded-full'
+                    ]),
 
                 Tables\Actions\ViewAction::make()
                     ->icon('heroicon-s-eye')

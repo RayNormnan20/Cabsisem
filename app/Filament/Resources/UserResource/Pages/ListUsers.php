@@ -12,8 +12,10 @@ class ListUsers extends ListRecords
 
     protected function getActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
+         return [
+            Actions\CreateAction::make()
+                ->label('Agregar Usuario')
+                ->icon('heroicon-s-plus'),
         ];
     }
 }

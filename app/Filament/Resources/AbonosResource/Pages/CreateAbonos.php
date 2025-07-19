@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\AbonosResource\Pages;
 
 use App\Filament\Resources\AbonosResource;
+use App\Models\Concepto;
 use App\Models\Creditos;
 use App\Models\Ruta;
+use COM;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateAbonos extends CreateRecord
@@ -45,6 +47,16 @@ class CreateAbonos extends CreateRecord
 
         $id_ruta = $this->obtenerIdRutaUsuario();
         $montoAbono = $data['monto_abono'] ?? 0;
+
+        // Obtener el concepto "Abono" de la tabla conceptos
+        $conceptoAbono = Concepto::where('nombre', 'Abono')->first();
+
+        if (!$conceptoAbono) {
+            throw new \Exception('El concepto "Abono" no existe en la tabla de conceptos');
+        }
+
+        // Asignar el id_concepto del abono
+        $data['id_concepto'] = $conceptoAbono->id;
 
         // Calcular los saldos
         $data['id_credito'] = $credito->id_credito;

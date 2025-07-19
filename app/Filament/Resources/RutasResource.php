@@ -193,9 +193,18 @@ class RutasResource extends Resource
                         $record->save();
                     }),
 
-                Tables\Actions\EditAction::make()
-                    ->icon('heroicon-s-pencil')
-                    ->color('primary'),
+               Tables\Actions\Action::make('edit')
+                    ->label('')
+                    ->icon('heroicon-o-pencil-alt')
+                    ->color('primary')
+                    ->size('lg')
+                    ->url(fn ($record): string => static::getUrl('edit', ['record' => $record]))
+                    ->extraAttributes([
+                        'title' => 'Editar',
+                        'class' => 'hover:bg-primary-50 rounded-full'
+                    ]),
+
+                
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
