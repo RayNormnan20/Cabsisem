@@ -331,6 +331,12 @@ class CreditosResource extends Resource
                     ->suffix('%')
                     ->sortable(),
 
+
+                Tables\Columns\TextColumn::make('tipoPago.nombre')
+                    ->label('Tipo')
+                    ->sortable(),
+
+
                 Tables\Columns\TextColumn::make('numero_cuotas')
                     ->label('Nr. cuotas')
                     ->sortable(),
@@ -387,6 +393,7 @@ class CreditosResource extends Resource
                     ->query(fn($query) => $query->where('saldo_actual', '>', 0)),
             ])
             ->actions([
+                /*
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-s-pencil')
                     ->color('primary'),
@@ -398,6 +405,7 @@ class CreditosResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-s-trash')
                     ->color('danger'),
+                    */
 
                 // Esto es de prueba pero no necesario XD, igual lo dejo aca
                 /* Action::make('baja_cuenta')

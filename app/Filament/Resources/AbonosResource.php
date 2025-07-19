@@ -50,72 +50,105 @@ class AbonosResource extends Resource
 {
     return $form
         ->schema([
-            // Campos ocultos que deben ser manejados
+            // Sección de fechas y montos
+            Forms\Components\Section::make('Datos del Abono')
+                ->schema([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('fecha_credito')
+                                ->label('Fecha de Crédito')
+                                ->disabled()
+                                ->dehydrated(false),
+                                
+                            Forms\Components\TextInput::make('fecha_vencimiento')
+                                ->label('Fecha de Vencimiento')
+                                ->disabled()
+                                ->dehydrated(false),
+                        ]),
+                        
+                    Forms\Components\Grid::make(3)
+                        ->schema([
+                            Forms\Components\TextInput::make('saldo_anterior')
+                                ->label('Saldo')
+                                ->numeric()
+                                ->disabled()
+                                ->prefix('S/'),
+                                
+                            Forms\Components\TextInput::make('valor_cuota')
+                                ->label('Cuota')
+                                ->numeric()
+                                ->disabled()
+                                ->prefix('S/'),
+                                
+                            Forms\Components\TextInput::make('monto_abono')
+                                ->label('Abono *')
+                                ->numeric()
+                                ->required()
+                                ->prefix('S/')
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                                    if ($get('id_credito') && is_numeric($state)) {
+                                        $saldoAnterior = $get('saldo_anterior');
+                                        $set('saldo_posterior', $saldoAnterior - $state);
+                                    }
+                                }),
+                        ]),
+                ])
+                ->columns(1),
+                
+            // Campos ocultos
             Forms\Components\Hidden::make('id_cliente')
                 ->required(),
                 
             Forms\Components\Hidden::make('id_credito'),
             Forms\Components\Hidden::make('id_ruta'),
             Forms\Components\Hidden::make('id_usuario'),
-            
-            Forms\Components\TextInput::make('monto_abono')
-                ->label('Monto del Abono')
-                ->numeric()
-                ->required()
-                ->reactive()
-                ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                    if ($get('id_credito') && is_numeric($state)) {
-                        $saldoAnterior = $get('saldo_anterior');
-                        $set('saldo_posterior', $saldoAnterior - $state);
-                    }
-                }),
+            Forms\Components\Hidden::make('saldo_posterior'),
                 
-            Forms\Components\TextInput::make('saldo_anterior')
-                ->label('Saldo Anterior')
-                ->numeric()
-                ->disabled(),
-                
-            Forms\Components\TextInput::make('saldo_posterior')
-                ->label('Nuevo Saldo')
-                ->numeric()
-                ->disabled(),
-                
-           Repeater::make('conceptosabonos')
-                ->label('Métodos de Pago')
-                ->relationship('conceptosabonos')
+            // Sección de métodos de pago
+            Forms\Components\Section::make('Métodos de Pago')
                 ->schema([
-                    Select::make('tipo_concepto') 
-                        ->options([
-                            'Efectivo' => 'Efectivo',
-                            'Transferencia' => 'Transferencia',
-                            'Yape' => 'Yape',
-                            'Plin' => 'Plin',
-                            'Tarjeta' => 'Tarjeta',
-                        ])
-                        ->required(),
-               
-
-                    TextInput::make('monto')
-                        ->label('Monto')
-                        ->numeric()
-                        ->required(),
+                    Repeater::make('conceptosabonos')
+                        ->label('')
+                        ->relationship('conceptosabonos')
+                        ->schema([
+                            Select::make('tipo_concepto') 
+                                ->options([
+                                    'Efectivo' => 'Efectivo',
+                                    'Transferencia' => 'Transferencia',
+                                    'Yape' => 'Yape',
+                                    'Plin' => 'Plin',
+                                    'Tarjeta' => 'Tarjeta',
+                                ])
+                                ->required()
+                                ->columnSpan(1),
+                               
+                            TextInput::make('monto')
+                                ->label('Monto')
+                                ->numeric()
+                                ->required()
+                                ->prefix('S/')
+                                ->columnSpan(1),
     
-                    Forms\Components\FileUpload::make('foto_comprobante')
-                        ->label('Comprobante')
-                        ->image()
-                        ->directory('comprobantes/abonos')
-                        ->visible(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia']))
-                        ->required(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia'])),
-                        
-                    Forms\Components\TextInput::make('referencia')
-                        ->label('N° Operación')
-                        ->visible(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia']))
-                        ->required(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia'])),
-                ])
-                ->defaultItems(1)
-                ->minItems(1)
-                ->createItemButtonLabel('Agregar método de pago')
-                ->columns(2),
+                            Forms\Components\FileUpload::make('foto_comprobante')
+                                ->label('Comprobante')
+                                ->image()
+                                ->directory('comprobantes/abonos')
+                                ->visible(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia']))
+                                ->required(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia']))
+                                ->columnSpan(2),
+                                
+                            Forms\Components\TextInput::make('referencia')
+                                ->label('N° Operación')
+                                ->visible(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia']))
+                                ->required(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Plin', 'Transferencia']))
+                                ->columnSpan(2),
+                        ])
+                        ->columns(2)
+                        ->defaultItems(1)
+                        ->minItems(1)
+                        ->createItemButtonLabel('Agregar método de pago'),
+                ]),
         ]);
 }
 
@@ -184,8 +217,8 @@ public static function table(Table $table): Table
                 Tables\Actions\Action::make('view')
                     ->label('')
                     ->icon('heroicon-o-eye')
-                    ->color('primary')
-                    ->size('lg')
+                    ->color(fn ($record) => $record->conceptosabonos->firstWhere('foto_comprobante', '!=', null) ? 'primary' : 'secondary')
+                    ->size('sm')
                     ->button()
                     ->modalHeading('Comprobante de Pago')
                     ->form(function ($record) {
@@ -194,7 +227,7 @@ public static function table(Table $table): Table
                         if (!$comprobante || !$comprobante->foto_comprobante) {
                             return [
                                 \Filament\Forms\Components\Placeholder::make('no_comprobante')
-                                    ->content('<div class="p-4 text-center text-gray-500">No hay comprobante disponible</div>')
+                                    ->content('No hay comprobante disponible')
                                     ->disableLabel()
                             ];
                         }
@@ -212,15 +245,16 @@ public static function table(Table $table): Table
                             \Filament\Forms\Components\Card::make()
                                 ->schema([
                                     \Filament\Forms\Components\Placeholder::make('comprobante')
-                                        ->content(new HtmlString($html))
+                                        ->content(new \Illuminate\Support\HtmlString($html))
                                         ->disableLabel()
                                 ])
                                 ->columnSpanFull()
                         ];
                     })
-                    ->modalWidth('4xl')
+                    ->modalWidth('2xl')
                     ->modalButton('Cerrar')
-                    ->hidden(fn ($record) => !$record->conceptosabonos->where('foto_comprobante', '!=', null)->count())
+                    ->hidden(false)
+                    ->hidden(fn ($record) => $record->conceptosabonos->count() === 0)
                     ->extraAttributes([
                         'title' => 'Ver comprobante',
                         'class' => 'hover:bg-success-50 rounded-full'

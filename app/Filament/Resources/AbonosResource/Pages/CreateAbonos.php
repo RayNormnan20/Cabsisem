@@ -3,31 +3,65 @@
 namespace App\Filament\Resources\AbonosResource\Pages;
 
 use App\Filament\Resources\AbonosResource;
+use App\Models\Clientes;
 use App\Models\Concepto;
 use App\Models\Creditos;
 use App\Models\Ruta;
-use COM;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Contracts\View\View;
 
 class CreateAbonos extends CreateRecord
 {
     protected static string $resource = AbonosResource::class;
 
     public $cliente_id;
+    public $clientes;
 
     public function mount(): void
     {
         parent::mount();
 
-        // Obtener el cliente_id de la URL
-        $this->cliente_id = request()->query('cliente_id');
+        // Obtener lista de clientes con créditos activos
+        $this->clientes = Clientes::whereHas('creditos', fn($q) => $q->where('saldo_actual', '>', 0))
+            ->orderBy('nombre')
+            ->get();
 
-        // Si tenemos un cliente_id, precargar los datos
+        // Precargar datos si viene con cliente_id
+        $this->cliente_id = request()->query('cliente_id');
         if ($this->cliente_id) {
+            $this->cargarDatosCliente($this->cliente_id);
+        }
+    }
+
+    public function cargarDatosCliente($clienteId)
+    {
+        $this->cliente_id = $clienteId;
+        $cliente = Clientes::find($clienteId);
+        $credito = Creditos::where('id_cliente', $clienteId)
+            ->where('saldo_actual', '>', 0)
+            ->first();
+
+        if ($credito) {
             $this->form->fill([
-                'id_cliente' => $this->cliente_id,
+                'id_cliente' => $clienteId,
+                'id_credito' => $credito->id_credito,
+                'cliente_nombre' => $cliente->nombre,
+                'fecha_credito' => $credito->fecha_credito->format('d/m/Y'),
+                'fecha_vencimiento' => $credito->fecha_vencimiento->format('d/m/Y'),
+                'saldo_anterior' => $credito->saldo_actual,
+                'monto_abono' => $credito->valor_cuota,
+                'valor_cuota' => $credito->valor_cuota, 
+                'cuota' => $credito->cuota_diaria,
             ]);
         }
+    }
+
+    protected function getHeader(): View
+    {
+        return view('filament.resources.abonos-resource.selector-cliente', [
+            'clientes' => $this->clientes,
+            'cliente_id' => $this->cliente_id,
+        ]);
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array

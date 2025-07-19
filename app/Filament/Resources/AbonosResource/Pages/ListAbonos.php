@@ -18,14 +18,24 @@ class ListAbonos extends ListRecords
     public ?int $clienteId = null;
     public ?string $fechaDesde = null;
     public ?string $fechaHasta = null;
-    public string $periodoSeleccionado = 'personalizado';
+    public string $periodoSeleccionado = 'hoy'; // Cambiado a 'hoy' por defecto
 
     protected $queryString = [
         'clienteId' => ['except' => null],
         'fechaDesde' => ['except' => null],
         'fechaHasta' => ['except' => null],
-        'periodoSeleccionado' => ['except' => 'personalizado'],
+        'periodoSeleccionado' => ['except' => 'hoy'], // Cambiado a 'hoy' por defecto
     ];
+
+    public function mount(): void
+    {
+        parent::mount();
+        
+        // Establecer fechas del día actual si no hay filtros aplicados
+        if (is_null($this->fechaDesde)) {
+            $this->aplicarPeriodo(); // Esto establecerá automáticamente el rango del día actual
+        }
+    }
 
     protected function getActions(): array
     {
@@ -39,7 +49,6 @@ class ListAbonos extends ListRecords
                         return '#';
                     }
                     
-                    // Verificar que el cliente tenga créditos activos
                     $tieneCreditos = Creditos::where('id_cliente', $this->clienteId)
                         ->where('saldo_actual', '>', 0)
                         ->exists();
@@ -105,29 +114,32 @@ class ListAbonos extends ListRecords
     {
         $this->fechaDesde = null;
         $this->fechaHasta = null;
-        $this->periodoSeleccionado = 'personalizado';
-        $this->aplicarFiltroFecha();
+        $this->periodoSeleccionado = 'hoy'; 
+        $this->aplicarPeriodo();
     }
 
     protected function getTableQuery(): Builder
     {
         $query = parent::getTableQuery()
             ->with(['cliente', 'credito', 'usuario']);
-            
-        if (!$this->clienteId) {
-            return $query->whereRaw('1 = 0');
-        }
         
-        $query->where('id_cliente', $this->clienteId);
+        // Solo filtrar por cliente si se ha seleccionado uno específico
+            if (!empty($this->clienteId)) {
+        $query->where('id_cliente', $this->clienteId); // Cambiado a id_cliente
+    }
         
-        // Aplicar filtro de fechas si existe
+        // Aplicar filtros de fecha (se mantiene tu lógica original)
         if ($this->fechaDesde && $this->fechaHasta) {
             $query->whereDate('fecha_pago', '>=', $this->fechaDesde)
-                 ->whereDate('fecha_pago', '<=', $this->fechaHasta);
+                ->whereDate('fecha_pago', '<=', $this->fechaHasta);
         } elseif ($this->fechaDesde) {
             $query->whereDate('fecha_pago', '>=', $this->fechaDesde);
         } elseif ($this->fechaHasta) {
             $query->whereDate('fecha_pago', '<=', $this->fechaHasta);
+        } else {
+            // Mostrar solo los del día actual cuando no hay fechas seleccionadas
+            $hoy = Carbon::today()->format('Y-m-d');
+            $query->whereDate('fecha_pago', $hoy);
         }
         
         return $query->orderBy('fecha_pago', 'desc');
@@ -141,9 +153,10 @@ class ListAbonos extends ListRecords
             'cliente' => $this->clienteId ? Clientes::with(['creditos', 'abonos'])->find($this->clienteId) : null,
         ]);
     }
+
     public function updated($property)
     {
-        if (in_array($property, ['clienteId', 'fechaDesde', 'fechaHasta'])) {
+        if (in_array($property, ['clienteId', 'fechaDesde', 'fechaHasta', 'periodoSeleccionado'])) {
             $this->resetPage();
         }
     }

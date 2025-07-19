@@ -5,9 +5,10 @@
         <div class="flex-1">
             <select 
                 wire:model="clienteId" 
+                wire:change="$set('clienteId', $event.target.value === '' ? null : parseInt($event.target.value))"
                 class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             >
-                <option value="">Seleccionar cliente</option>
+                <option value="">Todos los clientes</option> <!-- Cambiado el texto -->
                 @foreach($clientes as $id => $nombre)
                     <option value="{{ $id }}">{{ $nombre }}</option>
                 @endforeach
@@ -16,7 +17,7 @@
 
         <!-- Contenedor para filtro y botón - SIEMPRE visible -->
         <div class="flex items-center space-x-2">
-    <!-- Componente unificado de filtro de fechas -->
+            <!-- Componente unificado de filtro de fechas -->
     <div class="flex items-center bg-white rounded-md border border-gray-300 overflow-hidden">
         <!-- Selector de período -->
         <select 
@@ -24,17 +25,17 @@
             wire:change="aplicarPeriodo"
             class="border-none focus:ring-0 py-1 pl-2 pr-6 text-sm bg-gray-50"
         >
-            <option value="personalizado">Período</option>
-            <option value="hoy">Hoy</option>
+            <option value="hoy">Hoy</option> <!-- Opción por defecto -->
             <option value="ayer">Ayer</option>
             <option value="semana_actual">Esta semana</option>
             <option value="semana_anterior">Semana pasada</option>
             <option value="ultimas_2_semanas">Últimas 2 semanas</option>
             <option value="mes_actual">Este mes</option>
             <option value="mes_anterior">Mes pasado</option>
-        </select>
-        
-        <!-- Divisor visual -->
+            <option value="personalizado">Personalizado</option>
+            </select>
+                
+                <!-- Divisor visual -->
         <div class="h-6 w-px bg-gray-300"></div>
         
         <!-- Inputs de fecha integrados -->
