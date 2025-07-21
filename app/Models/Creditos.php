@@ -16,6 +16,7 @@ class Creditos extends Model
         'id_cliente',
         'id_ruta',
         'fecha_credito',
+        'id_concepto',
         'valor_credito',
         'porcentaje_interes',
         'forma_pago',
@@ -37,7 +38,11 @@ class Creditos extends Model
         'fecha_vencimiento' => 'date',
         'fecha_proximo_pago' => 'date'
     ];
-
+// En el modelo Credito
+    public function concepto()
+    {
+        return $this->belongsTo(Concepto::class, 'id_concepto');
+    }
     public function cliente()
     {
         return $this->belongsTo(Clientes::class, 'id_cliente');

@@ -19,4 +19,19 @@ class Concepto extends Model
     protected $casts = [
         'tipo' => 'string'
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Clientes::class);
+    }
+
+    public function concepto()
+    {
+        return $this->belongsTo(Concepto::class, 'concepto_id');
+    }
 }

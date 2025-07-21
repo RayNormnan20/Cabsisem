@@ -39,7 +39,8 @@ php artisan make:filament-resource LogActividadResource
 php artisan make:filament-resource Clientes
 php artisan make:filament-resource abonos
 php artisan make:filament-resource Conceptos
-
+php artisan make:filament-resource CuadreRecaudador
+php artisan make:filament-resource PlanillaRecaudador
 
 
 

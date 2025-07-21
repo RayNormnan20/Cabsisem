@@ -272,12 +272,12 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                     </div>
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                         <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                            Bajo y Actualización de Crédito
+                                            Bajar Cuenta
                                         </h3>
                                         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {{-- Columna Izquierda: Datos del Crédito (Solo lectura) --}}
                                             <div>
-                                                <h4 class="text-md font-semibold text-gray-800 mb-2">Datos Actuales del Crédito</h4>
+                                                <h4 class="text-md font-semibold text-gray-800 mb-2">Datos Actuales</h4>
 
                                                 <div class="mb-3">
                                                     <label for="cliente-display" class="block text-sm font-medium text-gray-700">Cliente</label>
@@ -315,7 +315,7 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
 
                                             {{-- Columna Derecha: Campos a Editar --}}
                                             <div>
-                                                <h4 class="text-md font-semibold text-gray-800 mb-2">Nuevos Datos para la Baja</h4>
+                                                <h4 class="text-md font-semibold text-gray-800 mb-2">Nuevo Cálculo</h4>
 
                                                 <div class="mb-3">
                                                     <label for="valor-credito" class="block text-sm font-medium text-gray-700">Valor Crédito</label>
@@ -326,7 +326,7 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                                     <input type="number" step="0.01" id="nuevo-interes" x-model="newInteres"  @input="calcularFormaPagoYVencimiento()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label for="forma-pago" class="block text-sm font-medium text-gray-700">Forma de Pago</label>
+                                                    <label for="forma-pago" class="block text-sm font-medium text-gray-700">Forma de Pago (Días)</label>
                                                     <input type="number" step="0.01" id="nuevo-forma-pago" x-model="newFormaPago" @input="calcularFormaPagoYVencimiento()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                 </div>
                                                 <div class="mb-3">

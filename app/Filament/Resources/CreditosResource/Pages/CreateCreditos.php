@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CreditosResource\Pages;
 
 use App\Filament\Resources\CreditosResource;
+use App\Models\Concepto;
 use App\Models\Creditos;
 use App\Models\TipoPago;
 use Carbon\Carbon;
@@ -34,6 +35,15 @@ class CreateCreditos extends CreateRecord
         }
 
         $data['id_ruta'] = $ruta->id_ruta;
+        // Obtener el concepto "Desembolso" de la tabla conceptos
+        $conceptoDesembolso = Concepto::where('nombre', 'Desembolso')->first();
+
+        if (!$conceptoDesembolso) {
+            throw new \Exception('El concepto "Desembolso" no existe en la tabla de conceptos');
+        }
+
+        // Asignar el id_concepto del desembolso
+        $data['id_concepto'] = $conceptoDesembolso->id;
 
         // Convertir valores a números
         $valorCredito = (float)$data['valor_credito'];

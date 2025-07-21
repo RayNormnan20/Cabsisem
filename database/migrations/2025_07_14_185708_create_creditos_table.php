@@ -14,6 +14,10 @@ return new class extends Migration
             $table->unsignedBigInteger('id_cliente');
             $table->foreign('id_cliente')->references('id_cliente')->on('clientes');
             
+            // Relación con concepto (Desembolso)
+            $table->unsignedBigInteger('id_concepto');
+            $table->foreign('id_concepto')->references('id')->on('conceptos');
+            
             $table->date('fecha_credito');
             $table->decimal('valor_credito', 12, 2);
             $table->decimal('porcentaje_interes', 5, 2);
@@ -31,7 +35,9 @@ return new class extends Migration
             $table->integer('numero_cuotas');
             $table->date('fecha_vencimiento');
             $table->date('fecha_proximo_pago');
+            
             $table->timestamps();
+            $table->softDeletes(); // Agregado para consistencia con abonos
         });
     }
 
