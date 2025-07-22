@@ -79,6 +79,7 @@ php artisan make:seeder MonedaSeeder
 php artisan make:seeder FormaPagoSeeder
 php artisan make:seeder OrdenCobroSeeder
 
+php artisan make:seeder ConceptosSeeder 
 
 
 

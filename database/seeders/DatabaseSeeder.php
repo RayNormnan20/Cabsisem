@@ -2,11 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\FormaContacto;
-use App\Models\Moneda;
-use App\Models\NivelInteres;
-use App\Models\TipoCobro;
-use App\Models\TipoDocumento;
+
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -28,6 +24,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(TipoPagoSeeder::class);
         $this->call(OrdenCobroSeeder::class);
+        $this->call(ConceptosSeeder::class);
 
 
 

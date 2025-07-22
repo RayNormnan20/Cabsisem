@@ -220,43 +220,84 @@ public static function table(Table $table): Table
                     ->color(fn ($record) => $record->conceptosabonos->firstWhere('foto_comprobante', '!=', null) ? 'primary' : 'secondary')
                     ->size('sm')
                     ->button()
-                    ->modalHeading('Comprobante de Pago')
+                    ->modalHeading('Detalles del Abono')
                     ->form(function ($record) {
                         $comprobante = $record->conceptosabonos->firstWhere('foto_comprobante', '!=', null);
                         
-                        if (!$comprobante || !$comprobante->foto_comprobante) {
-                            return [
-                                \Filament\Forms\Components\Placeholder::make('no_comprobante')
-                                    ->content('No hay comprobante disponible')
-                                    ->disableLabel()
-                            ];
-                        }
-
-                        $imageUrl = asset('storage/'.$comprobante->foto_comprobante);
-                        $html = <<<HTML
-                            <div class="flex justify-center p-4">
-                                <img src="$imageUrl" 
-                                    class="rounded-lg max-h-[80vh] cursor-pointer"
-                                    onclick="window.open(this.src, '_blank')">
+                        // Información compacta en 3 columnas
+                        $infoHtml = <<<HTML
+                            <div class="space-y-1 p-2">
+                                <div class="grid grid-cols-3 gap-2 text-xs">
+                                    <div>
+                                        <p class="font-medium text-gray-500">Cliente</p>
+                                        <p>{$record->cliente->nombre}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-500">Fecha</p>
+                                        <p>{$record->fecha_pago->format('d/m/Y H:i')}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-500">Monto</p>
+                                        <p>S/ {$record->monto_abono}</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-xs">
+                                    <div>
+                                        <p class="font-medium text-gray-500">Usuario</p>
+                                        <p>{$record->usuario->name}</p>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <p class="font-medium text-gray-500">Métodos de pago</p>
+                                        <p>{$record->conceptosabonos->pluck('tipo_concepto')->implode(', ')}</p>
+                                    </div>
+                                </div>
                             </div>
                         HTML;
 
-                        return [
+                        $components = [
                             \Filament\Forms\Components\Card::make()
                                 ->schema([
-                                    \Filament\Forms\Components\Placeholder::make('comprobante')
-                                        ->content(new \Illuminate\Support\HtmlString($html))
+                                    \Filament\Forms\Components\Placeholder::make('info')
+                                        ->content(new \Illuminate\Support\HtmlString($infoHtml))
                                         ->disableLabel()
                                 ])
                                 ->columnSpanFull()
                         ];
+
+                        // Comprobante más compacto si existe
+                        if ($comprobante && $comprobante->foto_comprobante) {
+                            $imageUrl = asset('storage/'.$comprobante->foto_comprobante);
+                            $comprobanteHtml = <<<HTML
+                                <div class="space-y-1 p-2">
+                                    <p class="text-xs font-medium text-gray-500">Comprobante</p>
+                                    <div class="flex justify-center">
+                                        <img src="$imageUrl" 
+                                            class="rounded-lg max-h-[290px] max-w-full object-contain cursor-pointer"
+                                            onclick="window.open(this.src, '_blank')">
+                                    </div>
+                                </div>
+                            HTML;
+
+                            $components[] = \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    \Filament\Forms\Components\Placeholder::make('comprobante')
+                                        ->content(new \Illuminate\Support\HtmlString($comprobanteHtml))
+                                        ->disableLabel()
+                                ])
+                                ->columnSpanFull();
+                        } else {
+                            $components[] = \Filament\Forms\Components\Placeholder::make('no_comprobante')
+                                ->content('No hay comprobante disponible')
+                                ->disableLabel();
+                        }
+
+                        return $components;
                     })
-                    ->modalWidth('2xl')
+                    ->modalWidth('xl') // Modal más estrecho
                     ->modalButton('Cerrar')
-                    ->hidden(false)
                     ->hidden(fn ($record) => $record->conceptosabonos->count() === 0)
                     ->extraAttributes([
-                        'title' => 'Ver comprobante',
+                        'title' => 'Ver Comprobante',
                         'class' => 'hover:bg-success-50 rounded-full'
                     ])
                     ->action(function () {

@@ -2,15 +2,35 @@
 
 namespace App\Providers;
 
+use App\Filament\Resources\ReportesResource\Pages\PlanillaRecaudador;
+use App\Models\Abonos;
+use App\Models\Clientes;
+use App\Models\Concepto;
+use App\Models\Creditos;
+use App\Models\Oficina;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 use App\Models\Ruta;
+use App\Policies\AbonoPolicy;
+use App\Policies\ClientesPolicy;
+use App\Policies\ConceptoPolicy;
+use App\Policies\CreditosPolicy;
+use App\Policies\OficinaPolicy;
+use App\Policies\PlanillaRecaudadorPolicy;
+use App\Policies\RutaPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         // 'App\Models\Model' => 'App\Policies\ModelPolicy',
+            Abonos::class => AbonoPolicy::class,
+            Oficina::class => OficinaPolicy::class,
+            Ruta::class => RutaPolicy::class,
+            Clientes::class => ClientesPolicy::class,
+            Creditos::class => CreditosPolicy::class,
+            PlanillaRecaudador::class => PlanillaRecaudadorPolicy::class,
+            Concepto::class => ConceptoPolicy::class,
     ];
 
     public function boot()
