@@ -33,8 +33,7 @@ class CreditosPolicy
      */
     public function view(User $user, Creditos $credito)
     {
-        return $user->can('Ver Credito') || 
-               $this->isClientAssigned($user, $credito->id_cliente)
+        return $user->can('Ver Creditos')
             ? Response::allow()
             : Response::deny('No tienes permiso para ver este crédito.');
     }
@@ -47,7 +46,7 @@ class CreditosPolicy
      */
     public function create(User $user)
     {
-        return $user->can('Crear Credito')
+        return $user->can('Crear Creditos')
             ? Response::allow()
             : Response::deny('No tienes permiso para crear créditos.');
     }
@@ -62,12 +61,8 @@ class CreditosPolicy
     public function update(User $user, Creditos $credito)
     {
         // Solo permitir actualización si el crédito no tiene abonos
-        $canUpdate = $user->can('Actualizar Credito') && 
-                    $credito->abonos()->count() === 0;
-
-        return $canUpdate || 
-               ($this->isClientAssigned($user, $credito->id_cliente) && 
-                $user->can('Actualizar Creditos Asignados'))
+        return $user->can('Actualizar Creditos') && 
+               $credito->abonos()->count() === 0
             ? Response::allow()
             : Response::deny('No tienes permiso para actualizar este crédito o el crédito ya tiene abonos asociados.');
     }
@@ -82,19 +77,9 @@ class CreditosPolicy
     public function delete(User $user, Creditos $credito)
     {
         // Solo permitir eliminación si el crédito no tiene abonos
-        return $user->can('Eliminar Credito') && 
+        return $user->can('Eliminar Creditos') && 
                $credito->abonos()->count() === 0
             ? Response::allow()
             : Response::deny('No tienes permiso para eliminar este crédito o el crédito ya tiene abonos asociados.');
-    }
-
-    /**
-     * Check if client is assigned to user's route
-     */
-    protected function isClientAssigned(User $user, int $clientId): bool
-    {
-        return $user->rutas()
-            ->whereHas('clientes', fn($q) => $q->where('id_cliente', $clientId))
-            ->exists();
     }
 }

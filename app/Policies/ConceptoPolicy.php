@@ -89,16 +89,4 @@ class ConceptoPolicy
             : Response::deny('No tienes permiso para eliminar este concepto, es un concepto del sistema o tiene movimientos asociados.');
     }
 
-    /**
-     * Determine whether the user can manage concept types.
-     *
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\Auth\Access\Response|bool
-     */
-    public function manageTypes(User $user)
-    {
-        return $user->can('Gestionar Tipos Concepto')
-            ? Response::allow()
-            : Response::deny('No tienes permiso para gestionar tipos de concepto.');
-    }
 }

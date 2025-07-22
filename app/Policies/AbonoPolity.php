@@ -33,7 +33,7 @@ class AbonoPolicy
      */
     public function view(User $user, Abonos $abono)
     {
-        return $user->can('Ver Abono')
+        return $user->can('Ver Abonos')
             ? Response::allow()
             : Response::deny('No tienes permiso para ver este abono.');
     }
@@ -46,7 +46,7 @@ class AbonoPolicy
      */
     public function create(User $user)
     {
-        return $user->can('Crear Abono')
+        return $user->can('Crear Abonos')
             ? Response::allow()
             : Response::deny('No tienes permiso para crear abonos.');
     }
@@ -60,7 +60,7 @@ class AbonoPolicy
      */
     public function update(User $user, Abonos $abono)
     {
-        return $user->can('Actualizar Abono')
+        return $user->can('Actualizar Abonos')
             ? Response::allow()
             : Response::deny('No tienes permiso para actualizar este abono.');
     }

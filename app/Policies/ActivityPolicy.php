@@ -2,12 +2,11 @@
 
 namespace App\Policies;
 
-use App\Models\Clientes;
+use App\Models\Activity;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Illuminate\Auth\Access\Response;
 
-class ClientesPolicy
+class ActivityPolicy
 {
     use HandlesAuthorization;
 
@@ -19,23 +18,19 @@ class ClientesPolicy
      */
     public function viewAny(User $user)
     {
-        return $user->can('Listar Clientes')
-            ? Response::allow()
-            : Response::deny('No tienes permiso para listar clientes.');
+        return $user->can('List activities');
     }
 
     /**
      * Determine whether the user can view the model.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\Clientes  $cliente
+     * @param  \App\Models\Activity  $activity
      * @return \Illuminate\Auth\Access\Response|bool
      */
-    public function view(User $user, Clientes $cliente)
+    public function view(User $user, Activity $activity)
     {
-        return $user->can('Ver Cliente')
-            ? Response::allow()
-            : Response::deny('No tienes permiso para ver este cliente.');
+        return $user->can('View activity');
     }
 
     /**
@@ -46,44 +41,54 @@ class ClientesPolicy
      */
     public function create(User $user)
     {
-        return $user->can('Crear Clientes')
-            ? Response::allow()
-            : Response::deny('No tienes permiso para crear clientes.');
+        return $user->can('Create activity');
     }
 
     /**
      * Determine whether the user can update the model.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\Clientes  $cliente
+     * @param  \App\Models\Activity  $activity
      * @return \Illuminate\Auth\Access\Response|bool
      */
-    public function update(User $user, Clientes $cliente)
+    public function update(User $user, Activity $activity)
     {
-        return $user->can('Actualizar Clientes')
-            ? Response::allow()
-            : Response::deny('No tienes permiso para actualizar este cliente.');
+        return $user->can('Update activity');
     }
 
     /**
      * Determine whether the user can delete the model.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\Clientes  $cliente
+     * @param  \App\Models\Activity  $activity
      * @return \Illuminate\Auth\Access\Response|bool
      */
-    public function delete(User $user, Clientes $cliente)
+    public function delete(User $user, Activity $activity)
     {
-        return $user->can('Eliminar Clientes')
-            ? Response::allow()
-            : Response::deny('No tienes permiso para eliminar este cliente.');
+        return $user->can('Delete activity');
     }
 
     /**
-     * Determine whether the user can import clients.
+     * Determine whether the user can restore the model.
      *
      * @param  \App\Models\User  $user
+     * @param  \App\Models\Activity  $activity
      * @return \Illuminate\Auth\Access\Response|bool
      */
-   
+    public function restore(User $user, Activity $activity)
+    {
+        //
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Activity  $activity
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function forceDelete(User $user, Activity $activity)
+    {
+        //
+    }
 }
