@@ -18,7 +18,7 @@ class CuadreRecaudadorResource extends Resource
     protected static ?string $model = CuadreRecaudador::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-collection';
-    
+
 
     public static function form(Form $form): Form
     {
@@ -44,14 +44,14 @@ class CuadreRecaudadorResource extends Resource
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
-    
+
     public static function getRelations(): array
     {
         return [
             //
         ];
     }
-    
+
     public static function getPages(): array
     {
         return [
@@ -59,5 +59,5 @@ class CuadreRecaudadorResource extends Resource
             'create' => Pages\CreateCuadreRecaudador::route('/create'),
             'edit' => Pages\EditCuadreRecaudador::route('/{record}/edit'),
         ];
-    }    
+    }
 }
