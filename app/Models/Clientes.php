@@ -39,6 +39,19 @@ class Clientes extends Model
         return $this->belongsTo(TipoDocumento::class, 'id_tipo_documento');
     }
 
+    public static function listarPorRuta($idRuta)
+{
+    return self::where('id_ruta', $idRuta)
+        ->get()
+        ->mapWithKeys(fn($c) => [$c->id_cliente => $c->nombre_completo]);
+}
+
+
+    public function yapeCliente()
+    {
+        return $this->hasMany(YapeCliente::class, 'id_cliente', 'id_cliente');
+    }
+
     // Relación con Ruta (¡NUEVA RELACIÓN!)
     // Un cliente pertenece a una ruta
     public function ruta()

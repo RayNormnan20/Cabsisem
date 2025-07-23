@@ -37,11 +37,11 @@ class PermissionsSeeder extends Seeder
         // Crear todos los permisos básicos
         foreach ($this->modules as $module) {
             $plural = Str::plural($module);
-            
+
             foreach ($this->pluralActions as $action) {
                 Permission::firstOrCreate(['name' => "$action $plural"]);
             }
-            
+
             foreach ($this->singularActions as $action) {
                 Permission::firstOrCreate(['name' => "$action $module"]);
             }
@@ -65,15 +65,15 @@ class PermissionsSeeder extends Seeder
         $collectorRole = Role::firstOrCreate(['name' => 'Cobrador']);
         $collectorPermissions = [
             // Clientes
-            'Listar Clientes', 'Ver Clientes', // Corregido a singular para coincidir con tu estructura
-            
+            'Listar Clientes', 'Ver Clientes', 'Actualizar Clientes', 'Eliminar Clientes',
+
             // Créditos
-            'Listar Creditos', 'Ver Creditos', // Corregido a singular
-            
+            'Listar Creditos', 'Ver Creditos', 'Crear Creditos', 'Actualizar Creditos', 'Eliminar Creditos',
+
             // Abonos
-            'Listar Abonos', 'Ver Abonos', 'Crear Abonos', // Corregido a singular
+            'Listar Abonos', 'Ver Abonos', 'Crear Abonos', 'Actualizar Abonos', 'Eliminar Abonos',
         ];
-        
+
         $collectorRole->syncPermissions($collectorPermissions);
 
         // Asignar rol admin al primer usuario si existe

@@ -52,10 +52,6 @@ class Oficina extends Model
         return $this->belongsTo(Moneda::class, 'id_moneda', 'id_moneda');
     }
 
-    public function configuracionAbonos()
-    {
-        return $this->hasOne(ConfiguracionAbonos::class, 'id_oficina');
-    }
 
     public function rutas()
     {

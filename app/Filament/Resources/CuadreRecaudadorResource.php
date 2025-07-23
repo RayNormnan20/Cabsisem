@@ -15,9 +15,15 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CuadreRecaudadorResource extends Resource
 {
-    protected static ?string $model = CuadreRecaudador::class;
+    protected static ?string $model = CuadreRecaudadorResource::class;
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-list';
+    protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationIcon = 'heroicon-o-collection';
+    protected static ?string $slug = 'Cuadre/recaudador';
+    protected static ?string $navigationLabel = 'Cuadre Recaudador';
+    protected static ?string $modelLabel = 'Reporte';
+    protected static ?string $pluralModelLabel = 'Cuadre Recaudador';
+    protected static ?string $navigationGroup = 'Reportes';
 
 
     public static function form(Form $form): Form

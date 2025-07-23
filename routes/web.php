@@ -8,12 +8,8 @@ use App\Http\Controllers\RoadMap\DataController;
 use App\Http\Controllers\Auth\OidcAuthController;
 use App\Http\Controllers\CreditoController;
 use App\Http\Controllers\RutaController;
-use App\Http\Middleware\CheckRutaAccess;
+use App\Http\Controllers\YapeClienteController;
 
-// Share ticket
-Route::get('/tickets/share/{ticket:code}', function (Ticket $ticket) {
-    return redirect()->to(route('filament.resources.tickets.view', $ticket));
-})->name('filament.resources.tickets.share');
 
 // Validate an account
 Route::get('/validate-account/{user:creation_token}', function (User $user) {
@@ -53,7 +49,8 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('/creditos/actualizar', [CreditoController::class, 'actualizarDatosCredito'])->name('creditos.actualizar');
 
-
+Route::get('/clientes/{id}', [YapeClienteController::class, 'getClienteInfo']);
+Route::get('/cobradores-por-ruta/{rutaId}', [YapeClienteController::class, 'getCobradoresPorRuta']);
 /*
 
 Route::middleware(['auth'])->group(function () {
