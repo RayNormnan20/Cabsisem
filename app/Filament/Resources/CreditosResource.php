@@ -9,7 +9,13 @@ use App\Models\OrdenCobro;
 use App\Models\TipoPago;
 use Carbon\Carbon;
 use Filament\Forms;
-use Filament\Tables\Actions\Action;;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\ViewField;
+use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\Field;
+use Filament\Forms\Components\Html;
+use Filament\Forms\Components\Image as ImageComponent;
 use Filament\Forms\Components\Card;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
@@ -293,10 +299,19 @@ class CreditosResource extends Resource
                                                     ->numeric()
                                                     ->required(),
 
+                                                // Un único campo de FileUpload que cambia según el tipo
                                                 Forms\Components\FileUpload::make('foto_comprobante')
-                                                    ->label('Comprobante Yape')
-                                                    ->visible(fn($get) => $get('tipo_concepto') === 'Yape')
-                                                    ->directory('comprobantes/yape')
+                                                    ->label(fn ($get) => match ($get('tipo_concepto')) {
+                                                        'Yape' => 'Comprobante Yape',
+                                                        'Efectivo' => 'Comprobante Efectivo',
+                                                        default => 'Comprobante'
+                                                    })
+                                                    ->directory(fn ($get) => match ($get('tipo_concepto')) {
+                                                        'Yape' => 'comprobantes/yape',
+                                                        'Efectivo' => 'comprobantes/efectivo',
+                                                        default => 'comprobantes/generales'
+                                                    })
+                                                    ->visible(fn ($get) => in_array($get('tipo_concepto'), ['Yape', 'Efectivo']))
                                                     ->image()
                                                     ->maxSize(2048)
                                                     ->columnSpanFull()
@@ -393,6 +408,59 @@ class CreditosResource extends Resource
                     ->query(fn($query) => $query->where('saldo_actual', '>', 0)),
             ])
             ->actions([
+                Tables\Actions\Action::make('view_comprobantes')
+                    ->label('')
+                    ->icon('heroicon-o-eye')
+                    ->color(fn ($record) => $record->conceptosCredito->where('foto_comprobante', '!=', null)->isNotEmpty() ? 'primary' : 'secondary')
+                    ->size('sm')
+                    ->button()
+                    ->modalHeading('Comprobantes de Pago')
+                    ->form(function ($record) {
+                        $comprobantes = $record->conceptosCredito->where('foto_comprobante', '!=', null);
+
+                        $components = [];
+
+                        if ($comprobantes->isNotEmpty()) {
+                            foreach ($comprobantes as $comprobante) {
+                                $imageUrl = asset('storage/'.$comprobante->foto_comprobante);
+                                $tipo = $comprobante->tipo_concepto;
+
+                                $imageHtml = <<<HTML
+                                    <div class="space-y-1 p-2">
+                                        <p class="text-xs font-medium text-gray-500">Comprobante {$tipo}</p>
+                                        <div class="flex justify-center">
+                                            <img src="$imageUrl"
+                                                class="rounded-lg max-h-[290px] max-w-full object-contain cursor-pointer"
+                                                onclick="window.open(this.src, '_blank')">
+                                        </div>
+                                    </div>
+                                HTML;
+
+                                $components[] = \Filament\Forms\Components\Card::make()
+                                    ->schema([
+                                        \Filament\Forms\Components\Placeholder::make('comprobante_'.$comprobante->id)
+                                            ->content(new \Illuminate\Support\HtmlString($imageHtml))
+                                            ->disableLabel()
+                                    ]);
+                            }
+                        } else {
+                            $components[] = \Filament\Forms\Components\Placeholder::make('no_comprobantes')
+                                ->content('No hay comprobantes disponibles')
+                                ->disableLabel();
+                        }
+
+                        return $components;
+                    })
+                    ->modalWidth('xl')
+                    ->modalButton('Cerrar')
+                    ->hidden(fn ($record) => $record->conceptosCredito->where('foto_comprobante', '!=', null)->isEmpty())
+                    ->extraAttributes([
+                        'title' => 'Ver Comprobantes',
+                        'class' => 'hover:bg-success-50 rounded-full'
+                    ])
+                    ->action(function () {
+                        // Acción vacía necesaria para el modal
+                    })
                 /*
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-s-pencil')
@@ -411,7 +479,7 @@ class CreditosResource extends Resource
                 /* Action::make('baja_cuenta')
                     ->label('Baja de Cuenta')
                     ->icon('heroicon-s-x-circle')
-                    ->color('warning') 
+                    ->color('warning')
                     ->modalHeading('Dar de Baja Crédito')
                     ->form([
                         Forms\Components\Placeholder::make('modal_description')
@@ -435,7 +503,7 @@ class CreditosResource extends Resource
                     ])
                     ->action(function (array $data, Creditos $record): void {
                         $record->update([
-                            'estado' => 'Baja', 
+                            'estado' => 'Baja',
                             'fecha_baja' => $data['fecha_baja'],
                             'motivo_baja' => $data['motivo_baja'],
                             'saldo_actual' => $data['monto_pendiente_baja'] ?? 0,
@@ -464,5 +532,5 @@ class CreditosResource extends Resource
         ];
     }
 
-    
+
 }

@@ -28,7 +28,8 @@ class ListCreditos extends ListRecords
     {
         return Creditos::query()
             ->when($this->clienteId, fn ($query) => $query->where('id_cliente', $this->clienteId))
-            ->when(!$this->clienteId, fn ($query) => $query->whereRaw('1=0'));
+            ->when(!$this->clienteId, fn ($query) => $query->whereRaw('1=0'))
+            ->orderBy('fecha_credito', 'desc'); // <- Ordenar por fecha descendente
     }
 
        protected function getHeader(): View

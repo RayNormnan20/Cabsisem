@@ -65,7 +65,7 @@ class PermissionsSeeder extends Seeder
         $collectorRole = Role::firstOrCreate(['name' => 'Cobrador']);
         $collectorPermissions = [
             // Clientes
-            'Listar Clientes', 'Ver Clientes', 'Actualizar Clientes', 'Eliminar Clientes',
+            'Listar Clientes', 'Ver Clientes', 'Actualizar Clientes', 'Eliminar Clientes', 'Crear Clientes',
 
             // Créditos
             'Listar Creditos', 'Ver Creditos', 'Crear Creditos', 'Actualizar Creditos', 'Eliminar Creditos',

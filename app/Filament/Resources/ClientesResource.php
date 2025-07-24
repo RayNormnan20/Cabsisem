@@ -7,6 +7,8 @@ use App\Models\Clientes;
 use App\Models\TipoDocumento;
 use Filament\Forms;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use Filament\Tables\Columns\ImageColumn; // Asegúrate de importar esto
+use Illuminate\Support\HtmlString;
 
 use Filament\Forms\Components\Card;
 use Filament\Forms\Components\Section;
@@ -16,6 +18,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
+use Filament\Forms\Components\FileUpload;
 use Filament\Tables;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -73,6 +76,17 @@ class ClientesResource extends Resource
                             TextInput::make('apellido')
                                 ->required()
                                 ->maxLength(100),
+
+                            FileUpload::make('foto1_path')
+                                ->label('Foto 1 del Cliente')
+                                ->directory('clientes/fotos') // Carpeta donde se guardarán
+                                ->image()
+                                ->required(),
+
+                            FileUpload::make('foto2_path')
+                                ->label('Foto 2 del Cliente')
+                                ->directory('clientes/fotos')
+                                ->image(),
                         ])->columns(2),
 
                     // Sección 2: Información de contacto
@@ -138,13 +152,34 @@ class ClientesResource extends Resource
                 TextColumn::make('numero_documento')
                     ->label('Documento')
                     ->searchable(),
-
+                /*
                 TextColumn::make('nombre_negocio')
                     ->label('Negocio')
                     ->searchable(),
-
+                */
                 TextColumn::make('celular')
                     ->searchable(),
+
+                 TextColumn::make('fotos')
+                ->label('Fotos')
+                ->formatStateUsing(function ($record) {
+                    $html = '<div class="flex items-center space-x-1">';
+
+                    if ($record->foto1_path) {
+                        $html .= '<img src="'.asset('storage/'.$record->foto1_path).'" class="h-8 w-8 rounded-full object-cover border border-gray-200">';
+                    }
+
+                    if ($record->foto2_path) {
+                        $html .= '<img src="'.asset('storage/'.$record->foto2_path).'" class="h-8 w-8 rounded-full object-cover border border-gray-200">';
+                    }
+
+                    $html .= '</div>';
+
+                    return empty($record->foto1_path) && empty($record->foto2_path)
+                        ? 'Sin fotos'
+                        : new HtmlString($html);
+                })
+                ->sortable(false),
 
                 BadgeColumn::make('activo')
                     ->label('Estado')
@@ -166,7 +201,9 @@ class ClientesResource extends Resource
                     ]),
             ])
             ->actions([
+                /*
                 ExportAction::make(),
+                */
                 Tables\Actions\Action::make('edit')
                     ->label('')
                     ->icon('heroicon-o-pencil-alt')
@@ -178,9 +215,81 @@ class ClientesResource extends Resource
                         'class' => 'hover:bg-primary-50 rounded-full'
                     ]),
 
-                Tables\Actions\ViewAction::make()
-                    ->icon('heroicon-s-eye')
-                    ->color('secondary'),
+                    Tables\Actions\Action::make('view_photos')
+                    ->label('')
+                    ->icon('heroicon-o-eye')
+                    ->color(fn ($record) => $record->foto1_path || $record->foto2_path ? 'primary' : 'secondary')
+                    ->size('sm')
+                    ->button()
+                    ->modalHeading('Fotos del Cliente')
+                    ->form(function ($record) {
+                        $components = [];
+
+                        // Foto 1 si existe
+                        if ($record->foto1_path) {
+                            $imageUrl1 = asset('storage/'.$record->foto1_path);
+                            $components[] = \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    \Filament\Forms\Components\Placeholder::make('foto1')
+                                        ->content(new \Illuminate\Support\HtmlString(
+                                            <<<HTML
+                                            <div class="space-y-1 p-2">
+                                                <p class="text-xs font-medium text-gray-500">Foto 1</p>
+                                                <div class="flex justify-center">
+                                                    <img src="$imageUrl1"
+                                                        class="rounded-lg max-h-[290px] max-w-full object-contain cursor-pointer"
+                                                        onclick="window.open(this.src, '_blank')">
+                                                </div>
+                                            </div>
+                                            HTML
+                                        ))
+                                        ->disableLabel()
+                                ])
+                                ->columnSpanFull();
+                        }
+
+                        // Foto 2 si existe
+                        if ($record->foto2_path) {
+                            $imageUrl2 = asset('storage/'.$record->foto2_path);
+                            $components[] = \Filament\Forms\Components\Card::make()
+                                ->schema([
+                                    \Filament\Forms\Components\Placeholder::make('foto2')
+                                        ->content(new \Illuminate\Support\HtmlString(
+                                            <<<HTML
+                                            <div class="space-y-1 p-2">
+                                                <p class="text-xs font-medium text-gray-500">Foto 2</p>
+                                                <div class="flex justify-center">
+                                                    <img src="$imageUrl2"
+                                                        class="rounded-lg max-h-[290px] max-w-full object-contain cursor-pointer"
+                                                        onclick="window.open(this.src, '_blank')">
+                                                </div>
+                                            </div>
+                                            HTML
+                                        ))
+                                        ->disableLabel()
+                                ])
+                                ->columnSpanFull();
+                        }
+
+                        // Mensaje si no hay fotos
+                        if (empty($components)) {
+                            $components[] = \Filament\Forms\Components\Placeholder::make('no_photos')
+                                ->content('No hay fotos disponibles')
+                                ->disableLabel();
+                        }
+
+                        return $components;
+                    })
+                    ->modalWidth('xl')
+                    ->modalButton('Cerrar')
+                    ->hidden(fn ($record) => !$record->foto1_path && !$record->foto2_path)
+                    ->extraAttributes([
+                        'title' => 'Ver Fotos',
+                        'class' => 'hover:bg-success-50 rounded-full'
+                    ])
+                ->action(function () {
+                    // Acción vacía necesaria para el modal
+                })
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),

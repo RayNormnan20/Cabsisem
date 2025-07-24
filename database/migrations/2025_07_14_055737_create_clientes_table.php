@@ -49,6 +49,10 @@ return new class extends Migration
                 ->constrained('ruta', 'id_ruta')
                 ->onDelete('restrict');
 
+            // Campos para fotos del cliente (nuevos)
+            $table->string('foto1_path')->nullable()->comment('Ruta de la primera foto del cliente');
+            $table->string('foto2_path')->nullable()->comment('Ruta de la segunda foto del cliente');
+
             // Timestamps
             $table->timestamps();
             $table->softDeletes();

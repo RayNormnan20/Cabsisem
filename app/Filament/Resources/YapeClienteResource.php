@@ -23,33 +23,29 @@ class YapeClienteResource extends Resource
 {
     return $form
         ->schema([
-            Forms\Components\Select::make('cliente_id')
-                ->label('Cliente')
-                ->options(function () {
-                    $user = Auth::user();
-                    $ruta = $user->rutaPrincipal;
+           Forms\Components\Select::make('id_cliente') // Cambiado de 'cliente_id' a 'id_cliente'
+    ->label('Cliente')
+    ->options(function () {
+        $user = Auth::user();
+        $ruta = $user->rutaPrincipal;
 
-                    if (!$ruta) {
-                        return [];
-                    }
+        if (!$ruta) {
+            return [];
+        }
 
-                    return \App\Models\Clientes::listarPorRuta($ruta->id_ruta);
-                })
-                ->searchable()
-                ->required(),
+        return \App\Models\Clientes::listarPorRuta($ruta->id_ruta);
+    })
+    ->searchable()
+    ->required(),
 
             Forms\Components\TextInput::make('nombre')
                 ->required()
                 ->label('Nombre del que Yapea'),
 
-            Forms\Components\TextInput::make('yape')
-                ->required()
-                ->label('Número Yape'),
-
-            Forms\Components\Select::make('user_id')
-                ->default(fn () => Auth::id())
-                ->disabled()
-                ->label('Cobrador'),
+                Forms\Components\Select::make('user_id')
+                    ->default(fn () => Auth::id())
+                    ->disabled()
+                    ->label('Cobrador'),
 
             Forms\Components\TextInput::make('monto')
                 ->numeric()
@@ -60,13 +56,7 @@ class YapeClienteResource extends Resource
                 ->numeric()
                 ->label('Entregar'),
 
-            Forms\Components\TextInput::make('total')
-                ->numeric()
-                ->label('Total'),
 
-            Forms\Components\TextInput::make('devolucion')
-                ->numeric()
-                ->label('Devolución'),
         ]);
 }
 
@@ -80,29 +70,19 @@ class YapeClienteResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('nombre')
-                    ->label('Pagador'),
-
-                Tables\Columns\TextColumn::make('yape')
-                    ->label('N° Yape'),
+                    ->label('Nombre Yape'),
 
                 Tables\Columns\TextColumn::make('usuario.name')
                     ->label('Cobrador'),
 
                 Tables\Columns\TextColumn::make('monto')
-                    ->money('PEN')
+                    ->money('PEN',true)
                     ->label('Monto'),
 
                 Tables\Columns\TextColumn::make('entregar')
-                    ->money('PEN')
+                    ->money('PEN', true)
                     ->label('Entregar'),
 
-                Tables\Columns\TextColumn::make('total')
-                    ->money('PEN')
-                    ->label('Total'),
-
-                Tables\Columns\TextColumn::make('devolucion')
-                    ->money('PEN')
-                    ->label('Devolución'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

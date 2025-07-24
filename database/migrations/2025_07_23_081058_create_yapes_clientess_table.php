@@ -13,12 +13,10 @@ return new class extends Migration
 
         $table->foreignId('id_cliente')->constrained('clientes', 'id_cliente')->onDelete('cascade');
         $table->string('nombre');
-        $table->string('yape');
         $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Cobrador seleccionado manualmente
         $table->decimal('monto', 10, 2);
         $table->decimal('entregar', 10, 2)->nullable();
-        $table->decimal('total', 10, 2)->nullable();
-        $table->decimal('devolucion', 10, 2)->nullable();
+
 
         $table->timestamps();
     });

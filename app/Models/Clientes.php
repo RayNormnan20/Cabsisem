@@ -26,7 +26,9 @@ class Clientes extends Model
         'nombre_negocio',
         'activo',
         'id_ruta',
-        'id_usuario_creador'
+        'id_usuario_creador',
+        'foto1_path',
+        'foto2_path',
     ];
 
     protected $casts = [
@@ -40,11 +42,11 @@ class Clientes extends Model
     }
 
     public static function listarPorRuta($idRuta)
-{
-    return self::where('id_ruta', $idRuta)
-        ->get()
-        ->mapWithKeys(fn($c) => [$c->id_cliente => $c->nombre_completo]);
-}
+    {
+        return self::where('id_ruta', $idRuta)
+            ->get()
+            ->mapWithKeys(fn($c) => [$c->id_cliente => $c->nombre_completo]);
+    }
 
 
     public function yapeCliente()
@@ -98,7 +100,17 @@ class Clientes extends Model
     }
 
     public function creador()
-{
-    return $this->belongsTo(User::class, 'id_usuario_creador');
-}
+    {
+        return $this->belongsTo(User::class, 'id_usuario_creador');
+    }
+
+    public function getFoto1UrlAttribute()
+    {
+        return $this->foto1_path ? asset('storage/' . $this->foto1_path) : null;
+    }
+
+    public function getFoto2UrlAttribute()
+    {
+        return $this->foto2_path ? asset('storage/' . $this->foto2_path) : null;
+    }
 }
