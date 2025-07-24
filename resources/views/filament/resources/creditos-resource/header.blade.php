@@ -46,12 +46,13 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-800">{{ $cliente->nombre_completo }}</h2>
 
-            <div 
+            <div
                 x-data="{
                     open: false, 
                     showDeactivationModal: false,
                     deactivatingCreditId: null,
                     isRenewal: false, // <--- NUEVO
+                    mostrarRenovacionCompleta: false,
 
                     clientName: '',
                     capital: '',
@@ -70,21 +71,49 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                     newValorCuota: '',
                     newVencimientoDate: '',
 
+                    renovacion: 0,
+                    montoTemporal: 0,
+                    newFecha: '',
+                    newFechaVencimiento: '',
+
                     mediosDisponibles: ['Efectivo', 'Yape', 'Plin', 'Tarjeta', 'Transferencia'],
                     pagos: [],
                     medioSeleccionado: '',
+                    
+                    get aEntregar() {
+                        const resultado = this.renovacion - this.saldoActual;
+                        return resultado > 0 ? resultado : 0;
+                    },
+
+                    get totalEntregado() {
+                        return this.pagos.reduce((acc, p) => acc + Number(p.monto), 0);
+                    },
+
+                    get valorCredito() {
+                        return this.aEntregar;
+                    },
 
                     agregarMedioPago() {
-                        if (!this.medioSeleccionado) return;
-
-                        const yaExiste = this.pagos.find(p => p.tipo === this.medioSeleccionado);
-                        if (yaExiste) {
-                            alert('Este medio de pago ya fue agregado.');
+                        if (!this.medioSeleccionado || !this.montoTemporal) {
+                            alert('Debe completar el tipo de pago y el monto.');
                             return;
                         }
 
-                        this.pagos.push({ tipo: this.medioSeleccionado, monto: 0 });
+                        const nuevoMonto = Number(this.montoTemporal);
+                        const restante = this.valorCredito - this.totalEntregado;
+
+                        if (nuevoMonto > restante) {
+                            alert(`El monto excede el valor restante por entregar: S/ ${restante.toFixed(2)}`);
+                            return;
+                        }
+
+                        this.pagos.push({
+                            tipo: this.medioSeleccionado,
+                            monto: nuevoMonto
+                        });
+
                         this.medioSeleccionado = '';
+                        this.montoTemporal = 0;
                     },
 
                     eliminarMedioPago(index) {
@@ -98,6 +127,29 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                     init() {
                         this.$watch('newInteres', () => this.calcularFormaPagoYVencimiento());
                         this.$watch('newFormaPago', () => this.calcularFormaPagoYVencimiento());
+
+                        this.$watch(() => [this.newInteres, this.newFormaPago], ([interes, forma]) => {
+                            this.mostrarRenovacionCompleta = interes && forma;
+                        });
+
+                        const hoy = new Date().toISOString().split('T')[0];
+                        this.newFecha = hoy;
+
+                        this.$watch('newFormaPago', (value) => {
+                            if (!value || isNaN(value)) {
+                                this.newFechaVencimiento = '';
+                                return;
+                            }
+
+                            const fechaInicio = new Date(this.newFecha);
+                            fechaInicio.setDate(fechaInicio.getDate() + parseInt(value));
+                            this.newFechaVencimiento = fechaInicio.toISOString().split('T')[0];
+                        });
+
+                        // Forzar el primer cálculo al iniciar
+                        this.$nextTick(() => {
+                            this.$dispatch('input', { target: { value: this.newFormaPago } });
+                        });
                     },
 
                     calcularDiasEntreFechas(fechaInicio, fechaFin) {
@@ -212,8 +264,47 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
 
                     confirmDeactivation() {
                         if (this.isRenewal) {
-                            // Lógica para renovación
-                            alert('Renovacion alerta');
+
+                            // Armar payload
+                            const payload = {
+                                id: this.deactivatingCreditId,
+                                valor_credito: parseFloat(this.aEntregar),
+                                porcentaje_interes: parseFloat(this.newInteres),
+                                dias_plazo: parseInt(this.newFormaPago), // forma de pago en días
+                                fecha_vencimiento: this.newVencimientoDate,
+                                valor_cuota: parseFloat(this.newValorCuota),
+                                numero_cuotas: parseInt(this.newNumeroCuotas) || 1,
+                                medios_pago: this.pagos
+                                    .filter(mp => mp.tipo && mp.monto && !isNaN(parseFloat(mp.monto)))
+                                    .map(mp => ({
+                                        tipo: mp.tipo,
+                                        monto: parseFloat(mp.monto)
+                                    }))
+                            };
+
+                            fetch(`/creditos/renovar`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json', 
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                                },
+                                body: JSON.stringify(payload)
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.message) {
+                                    alert(data.message);
+                                    console.log(data);
+                                    this.showDeactivationModal = false;
+                                } else {
+                                    alert(data.error || 'Error al renovar');
+                                }
+                            })
+                            .catch(e => {
+                                console.error(e);
+                                alert('Error de conexión.');
+                            });
                         } else {
                             // Lógica para baja de cuenta
                             fetch('/creditos/actualizar', {
@@ -289,14 +380,14 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                 <!-- <a href="{{ route('filament.resources.creditos.create', ['cliente_id' => $cliente->id_cliente]) }}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-0">Nuevo Préstamo</a> -->
                                 @if($cliente->creditos->isEmpty() || $cliente->creditos->every(fn($credito) => $credito->saldo_actual <= 0))
                                     <a href="{{ route('filament.resources.creditos.create', ['cliente_id' => $cliente->id_cliente]) }}"
-                                        class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
-                                        role="menuitem" tabindex="-1" id="menu-item-0">
-                                        Nuevo Préstamo
+                                    class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                                    role="menuitem" tabindex="-1" id="menu-item-0">
+                                    Nuevo Préstamo
                                     </a>
-                                @endif
+                                    @endif
 
-                                <a href="#"
-                                    @click.prevent="setDeactivationCredit(
+                                    <a href="#"
+                                        @click.prevent="setDeactivationCredit(
                                         {{ $cliente->creditos->first()->id_credito }},
                                         {
                                             clientName: '{{ $cliente->nombre_completo ?? $cliente->nombre }}', // Ajusta según el campo de nombre de tu cliente
@@ -309,13 +400,13 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                         },
                                         false
                                     )"
-                                    class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
-                                    role="menuitem" tabindex="-1" id="menu-item-1">
-                                    Bajo Cuenta
-                                </a>
-                                <a href="#" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-2">Cancelado</a>
-                                <a href="#"
-                                    @click.prevent="setDeactivationCredit(
+                                        class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                                        role="menuitem" tabindex="-1" id="menu-item-1">
+                                        Bajo Cuenta
+                                    </a>
+                                    <a href="#" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" tabindex="-1" id="menu-item-2">Cancelado</a>
+                                    <a href="#"
+                                        @click.prevent="setDeactivationCredit(
                                             {{ $cliente->creditos->first()->id_credito }},
                                             {
                                                 clientName: '{{ $cliente->nombre_completo ?? $cliente->nombre }}',
@@ -329,9 +420,9 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                             },
                                             true
                                     )"
-                                    class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
-                                    role="menuitem">
-                                    Renovación
+                                        class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100"
+                                        role="menuitem">
+                                        Renovación
                                     </a>
 
                             </div>
@@ -376,7 +467,7 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                         </svg>
                                     </div>
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                        <h2 class="text-lg font-semibold text-gray-900" 
+                                        <h2 class="text-lg font-semibold text-gray-900"
                                             x-text="isRenewal ? 'Renovación de Crédito' : 'Bajo Cuenta'">
                                         </h2>
                                         <div class="mt-4 p-4 border border-gray-300 rounded-lg bg-blue-50">
@@ -446,7 +537,7 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="nuevo-interes" class="block text-sm font-medium text-gray-700">Nuevo Interés</label>
-                                                    <input type="number" step="0.01" id="nuevo-interes" x-model="newInteres"  @input="calcularFormaPagoYVencimiento()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                    <input type="number" step="0.01" id="nuevo-interes" x-model="newInteres" @input="calcularFormaPagoYVencimiento()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="forma-pago" class="block text-sm font-medium text-gray-700">Forma de Pago (Días)</label>
@@ -469,50 +560,81 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                         </div>
                                     </div>
                                 </div>
-                                <template x-if="isRenewal">
+                                <template x-if="isRenewal && !mostrarRenovacionCompleta">
+                                    <div class="mt-6 text-sm text-gray-600 italic">
+                                        Completa el <strong>nuevo interés</strong> y la <strong>forma de pago</strong> para continuar...
+                                    </div>
+                                </template>
+                                <template x-if="isRenewal && mostrarRenovacionCompleta">
                                     <div class="mt-4 space-y-3">
+                                        <h1 class="text-md font-semibold text-gray-800 mb-2">Renovación</h1>
                                         <!-- Saldo Actual -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700">Saldo Actual</label>
-                                            <input type="number" x-model="saldoActual" class="mt-1 block w-full border-gray-300 rounded-md" disabled />
+                                            <input type="number" x-model="saldoActual" class="mt-1 block w-full border-gray-300 bg-gray-100 rounded-md" readonly disabled />
                                         </div>
                                         <!-- Renovación -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700">Renovación</label>
                                             <input type="number" x-model="renovacion" class="mt-1 block w-full border-gray-300 rounded-md" />
                                         </div>
-                                        <!-- Nueva Fecha y Fecha de Vencimiento en una fila -->
-                                        <div class="flex space-x-4">
-                                            <div class="w-1/2">
+                                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <!-- Nueva Fecha -->
+                                            <div>
                                                 <label class="block text-sm font-medium text-gray-700">Nueva Fecha</label>
-                                                <input type="date" x-model="nuevaFecha" class="mt-1 block w-full border-gray-300 rounded-md" />
+                                                <input
+                                                    type="date"
+                                                    x-model="newFecha"
+                                                    class="mt-1 block w-full border-gray-300 rounded-md bg-gray-100"
+                                                    readonly />
                                             </div>
-                                            <div class="w-1/2">
+
+                                            <!-- Nueva Fecha de Vencimiento -->
+                                            <div>
                                                 <label class="block text-sm font-medium text-gray-700">Nueva Fecha de Vencimiento</label>
-                                                <input type="date" x-model="newFechaVencimiento" class="mt-1 block w-full border-gray-300 rounded-md" />
+                                                <input
+                                                    type="date"
+                                                    x-model="newFechaVencimiento"
+                                                    class="mt-1 block w-full border-gray-300 rounded-md bg-gray-100"
+                                                    readonly />
                                             </div>
                                         </div>
                                         <!-- A entregar -->
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700">A Entregar</label>
-                                            <input type="number" x-model="aEntregar" class="mt-1 block w-full border-gray-300 rounded-md" />
+                                            <label class="block text-sm font-medium text-gray-700">A entregar</label>
+                                            <input
+                                                type="number"
+                                                :value="aEntregar.toFixed(2)"
+                                                readonly
+                                                class="mt-1 block w-full border-gray-300 bg-gray-100 rounded-md" />
                                         </div>
                                         <!-- Valor del nuevo crédito -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700">Valor del Crédito</label>
-                                            <input type="number" x-model="newValorCredito" class="mt-1 block w-full border-gray-300 rounded-md" />
+                                            <input type="number" :value="valorCredito.toFixed(2)" readonly class="mt-1 block w-full border-gray-300 rounded-md" />
                                         </div>
                                         <!-- Selección de medios de pago -->
                                         <div class="mt-4">
                                             <label class="block text-sm font-medium text-gray-700">Agregar medio de pago</label>
-                                            <div class="flex space-x-2 mt-1">
+                                            <div class="flex flex-wrap gap-2 mt-1">
                                                 <select x-model="medioSeleccionado" class="border-gray-300 rounded-md">
                                                     <option value="" disabled selected>Seleccione...</option>
                                                     <template x-for="medio in mediosDisponibles" :key="medio">
                                                         <option x-text="medio" :value="medio"></option>
                                                     </template>
                                                 </select>
-                                                <button type="button" @click="agregarMedioPago" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Agregar</button>
+                                                <input
+                                                    type="number"
+                                                    x-model="montoTemporal"
+                                                    min="0"
+                                                    class="border-gray-300 rounded-md w-36"
+                                                    placeholder="Monto" />
+                                                <button
+                                                    type="button"
+                                                    @click="agregarMedioPago"
+                                                    class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                                    Agregar
+                                                </button>
                                             </div>
                                         </div>
 
@@ -540,9 +662,26 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                 <button type="button"
                                     @click="confirmDeactivation()"
                                     class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                    x-text="isRenewal ? 'Confirmar Renovación' : 'Confirmar Baja de Cuenta'"
-                                >
+                                    x-text="isRenewal ? 'Confirmar Renovación' : 'Confirmar Baja de Cuenta'">
                                 </button>
+
+                                <button
+                                    type="button"
+                                    @click="console.log({
+                                        saldoActual,
+                                        renovacion,
+                                        newFecha,
+                                        newFechaVencimiento,
+                                        aEntregar,
+                                        valorCredito,
+                                        pagos,
+                                        totalEntregado
+                                    })"
+                                    class="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                >
+                                    Ver datos en consola
+                                </button>
+
 
                                 <button type="button" @click="showDeactivationModal = false"
                                     class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
@@ -550,173 +689,6 @@ $siguienteId = $currentIndex < count($clienteIds) - 1 ? $clienteIds[$currentInde
                                 </button>
                             </div>
                         </div>
-                        <!-- <div x-show="showDeactivationModal"
-                            x-transition:enter="ease-out duration-300"
-                            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                            x-transition:leave="ease-in duration-200"
-                            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                            class="fixed inset-0 z-50 overflow-y-auto"
-                            aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                                {{-- Fondo del overlay --}}
-                                <div x-show="showDeactivationModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                                    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                    class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
-                                {{-- Este span es para centrar el contenido del modal horizontalmente --}}
-                                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                                {{-- Panel del modal --}}
-                                <div x-show="showDeactivationModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                                    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full"> {{-- Aumentado el ancho a sm:max-w-4xl --}}
-                                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                        <div class="sm:flex sm:items-start">
-                                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                                <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.26-3.168 1.26-4.034 0L.436 4.673A1.875 1.875 0 012.007 2.25h14.536a1.875 1.875 0 011.571 2.423L12 9v3.75m-9.303 3.376c-.866 1.26-3.168 1.26-4.034 0L.436 4.673A1.875 1.875 0 012.007 2.25h14.536a1.875 1.875 0 011.571 2.423L12 9v3.75M10.125 15.75L12 21.75l-1.875-6zm-.825-4.725L12 11.25m0 0l-1.875-6z" />
-                                                </svg>
-                                            </div>
-                                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                                <h2 class="text-2xl font-bold text-gray-900 mb-4"
-                                                    x-text="isRenewal ? 'Renovación de Crédito' : 'Baja de Cuenta'">
-                                                </h2>
-
-                                                <div class="p-4 mb-6 border border-blue-200 rounded-lg bg-blue-50">
-                                                    <h3 class="text-lg font-semibold text-blue-800 mb-2">Período del Crédito</h3>
-                                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center font-semibold text-gray-800">
-                                                        <div>
-                                                            <span class="block text-sm text-gray-600">Fecha de Inicio</span>
-                                                            <span x-text="fechaInicio" class="text-xl text-blue-700"></span>
-                                                        </div>
-                                                        <div>
-                                                            <span class="block text-sm text-gray-600">Fecha de Vencimiento</span>
-                                                            <span x-text="fechaVencimiento" class="text-xl text-blue-700"></span>
-                                                        </div>
-                                                        <div>
-                                                            <span class="block text-sm text-gray-600">Total de Días</span>
-                                                            <span x-text="calcularDiasEntreFechas(fechaInicio, fechaVencimiento)" class="text-xl text-blue-700"></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-8"> {{-- Aumento del gap --}}
-                                                    {{-- Columna Izquierda: Datos del Crédito (Solo lectura) --}}
-                                                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50"> {{-- Borde y fondo sutil --}}
-                                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Detalles del Crédito Actual</h4>
-
-                                                        <div class="mb-4">
-                                                            <label for="cliente-display" class="block text-sm font-medium text-gray-700">Cliente</label>
-                                                            <input type="text" id="cliente-display" x-model="clientName" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-800 font-medium">
-                                                        </div>
-                                                        <div class="grid grid-cols-2 gap-4"> {{-- Grid para agrupar campos financieros --}}
-                                                            <div class="mb-4">
-                                                                <label for="capital-display" class="block text-sm font-medium text-gray-700">Capital</label>
-                                                                <input type="text" id="capital-display" x-model="capital" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600">
-                                                            </div>
-                                                            <div class="mb-4">
-                                                                <label for="interes-display" class="block text-sm font-medium text-gray-700">Interés Generado</label>
-                                                                <input type="text" id="interes-display" x-model="interes" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600">
-                                                            </div>
-                                                            <div class="mb-4 col-span-2">
-                                                                <label for="saldo-display" class="block text-sm font-medium text-gray-700">Saldo Inicial</label>
-                                                                <input type="text" id="saldo-display" x-model="saldo" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600">
-                                                            </div>
-                                                            <div class="mb-4 col-span-2">
-                                                                <label for="abonos-display" class="block text-sm font-medium text-gray-700">Total Abonos</label>
-                                                                <template x-if="abonos === 'No hay abonos por el momento'">
-                                                                    <input type="text" value="No hay abonos por el momento" disabled
-                                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-red-600 italic" />
-                                                                </template>
-                                                                <template x-if="abonos !== 'No hay abonos por el momento'">
-                                                                    <input type="text" x-model="abonos" disabled
-                                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600" />
-                                                                </template>
-                                                            </div>
-                                                        </div>
-                                                        <div class="mt-4 p-3 bg-white border border-gray-300 rounded-md"> {{-- Destacar el saldo actual --}}
-                                                            <label for="saldo-actual-display" class="block text-sm font-bold text-gray-800">Saldo Actual a Cancelar</label>
-                                                            <input type="text" id="saldo-actual-display" x-model="saldoActual" disabled class="mt-1 block w-full rounded-md border-transparent shadow-none bg-white text-2xl font-extrabold text-indigo-700">
-                                                        </div>
-                                                    </div>
-
-                                                    {{-- Columna Derecha: Campos a Editar / Nuevo Cálculo --}}
-                                                    <div class="p-4 border border-blue-200 rounded-lg bg-blue-50"> {{-- Borde y fondo sutil para nuevos datos --}}
-                                                        <h4 class="text-lg font-semibold text-blue-800 mb-4" x-text="isRenewal ? 'Nuevos Términos de Renovación' : 'Ajuste de Baja de Cuenta'"></h4>
-
-                                                        <div class="mb-4">
-                                                            <label for="valor-credito" class="block text-sm font-medium text-gray-700">Valor del Nuevo Crédito</label>
-                                                            <input type="number" id="valor-credito" x-model="newValorCredito" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600">
-                                                        </div>
-                                                        <div class="mb-4">
-                                                            <label for="nuevo-interes" class="block text-sm font-medium text-gray-700">Porcentaje de Interés (%)</label>
-                                                            <input type="number" step="0.01" id="nuevo-interes" x-model="newInteres"  @input="calcularFormaPagoYVencimiento()" class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                                        </div>
-                                                        <div class="mb-4">
-                                                            <label for="forma-pago" class="block text-sm font-medium text-gray-700">Días para Forma de Pago</label>
-                                                            <input type="number" step="1" id="nuevo-forma-pago" x-model="newFormaPago" @input="calcularFormaPagoYVencimiento()" class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                                        </div>
-
-                                                        <div class="grid grid-cols-2 gap-4">
-                                                            <div class="mb-4">
-                                                                <label for="fecha-actual" class="block text-sm font-medium text-gray-700">Fecha de Cálculo</label>
-                                                                <input type="date" id="fecha-actual" :value="new Date().toISOString().split('T')[0]" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600">
-                                                            </div>
-                                                            <div class="mb-4">
-                                                                <label for="nueva-fecha-vencimiento" class="block text-sm font-medium text-gray-700">Nueva Fecha Vencimiento</label>
-                                                                <input type="date" id="nueva-fecha-vencimiento" x-model="newVencimientoDate" disabled readonly class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-600">
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="mt-4 p-3 bg-white border border-blue-300 rounded-md"> {{-- Destacar la nueva cuenta --}}
-                                                            <label for="nueva-cuenta" class="block text-sm font-bold text-gray-800">Monto Total a Pagar</label>
-                                                            <input type="text" id="nueva-cuenta" x-model="newCuenta" disabled class="mt-1 block w-full rounded-md border-transparent shadow-none bg-white text-2xl font-extrabold text-green-700">
-                                                        </div>
-                                                        <div class="mb-4 mt-2">
-                                                            <label for="newValorCuota" class="block text-sm font-bold text-gray-800">Valor Cuota Diaria (Estimado)</label>
-                                                            <input type="text" id="newValorCuota" x-model="newValorCuota" disabled class="mt-1 block w-full rounded-md border-transparent shadow-none bg-white text-xl font-extrabold text-purple-700">
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-
-                                                <template x-if="isRenewal">
-                                                    <div class="mt-6 p-4 border border-green-300 rounded-lg bg-green-50">
-                                                        <h4 class="text-lg font-semibold text-green-800 mb-4">Detalles Adicionales de Renovación</h4>
-                                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div class="mb-3">
-                                                                <label class="block text-sm font-medium text-gray-700">Nuevo Capital de Préstamo (Opcional)</label>
-                                                                <input type="number" x-model="newCapital" class="mt-1 block w-full border-green-300 rounded-md shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" placeholder="Ej: 500.00" />
-                                                                <p class="mt-1 text-xs text-gray-500">Si el cliente pide un monto adicional al saldo actual.</p>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="block text-sm font-medium text-gray-700">Nueva Fecha de Vencimiento Específica (Opcional)</label>
-                                                                <input type="date" x-model="newFechaVencimiento" class="mt-1 block w-full border-green-300 rounded-md shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" />
-                                                                <p class="mt-1 text-xs text-gray-500">Sobrescribe el cálculo automático si se requiere una fecha fija.</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                        <button type="button"
-                                            @click="confirmDeactivation()"
-                                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                            x-text="isRenewal ? 'Confirmar Renovación' : 'Confirmar Baja'">
-                                        </button>
-                                        <button type="button" @click="showDeactivationModal = false"
-                                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                                            Cancelar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
             </div>
