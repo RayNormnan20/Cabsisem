@@ -29,6 +29,9 @@
             @livewire('filament.core.global-search')
 
             @livewire('filament.core.notifications')
+            
+            {{-- ¡AQUÍ ES DONDE DEBE IR EL BOTÓN "RUTA"! --}}
+            @livewire('route-button')
 
             <x-filament::layouts.app.topbar.user-menu />
         </div>
