@@ -977,6 +977,7 @@ class ComposerStaticInit10792816e5e2dda5bd11767ecd0bbbfc
         'App\\Http\\Controllers\\RoadMap\\DataController' => __DIR__ . '/../..' . '/app/Http/Controllers/RoadMap/DataController.php',
         'App\\Http\\Controllers\\RutaController' => __DIR__ . '/../..' . '/app/Http/Controllers/RutaController.php',
         'App\\Http\\Kernel' => __DIR__ . '/../..' . '/app/Http/Kernel.php',
+        'App\\Http\\Livewire\\CustomSelectModal' => __DIR__ . '/../..' . '/app/Http/Livewire/CustomSelectModal.php',
         'App\\Http\\Livewire\\Profile' => __DIR__ . '/../..' . '/app/Http/Livewire/Profile.php',
         'App\\Http\\Livewire\\RoadMap\\EpicForm' => __DIR__ . '/../..' . '/app/Http/Livewire/RoadMap/EpicForm.php',
         'App\\Http\\Livewire\\RoadMap\\IssueForm' => __DIR__ . '/../..' . '/app/Http/Livewire/RoadMap/IssueForm.php',

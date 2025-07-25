@@ -3,28 +3,23 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AbonosResource\Pages;
-use App\Models\Abono;
 use App\Models\Abonos;
-use App\Models\Cliente;
-use App\Models\Credito;
-use App\Models\Creditos;
 use Illuminate\Support\HtmlString;
-
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Text;
-use Filament\Forms\Components\Html;
 
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\Action; 
+use Filament\Tables\Filters\Filter; 
+use Filament\Tables\Filters\SelectFilter; 
 use Illuminate\Database\Eloquent\Builder;
-
 class AbonosResource extends Resource
 {
     protected static ?string $model = Abonos::class;
@@ -185,7 +180,7 @@ public static function table(Table $table): Table
                     ->relationship('cliente', 'nombre')
                     ->searchable(),
                     
-                Tables\Filters\Filter::make('fecha_pago')
+                Filter::make('fecha_pago') // Usando la clase importada directamente
                     ->form([
                         Forms\Components\DatePicker::make('desde'),
                         Forms\Components\DatePicker::make('hasta'),
@@ -203,7 +198,7 @@ public static function table(Table $table): Table
                     })
             ])
             ->actions([
-                Tables\Actions\Action::make('edit')
+                Action::make('edit') // Usando la clase importada directamente
                     ->label('')
                     ->icon('heroicon-o-pencil-alt')
                     ->color('primary')
@@ -214,14 +209,34 @@ public static function table(Table $table): Table
                         'class' => 'hover:bg-primary-50 rounded-full'
                     ]),
                 
-                Tables\Actions\Action::make('view')
+                Action::make('view') // Usando la clase importada directamente
                     ->label('')
                     ->icon('heroicon-o-eye')
                     ->color(fn ($record) => $record->conceptosabonos->firstWhere('foto_comprobante', '!=', null) ? 'primary' : 'secondary')
                     ->size('sm')
                     ->button()
                     ->modalHeading('Detalles del Abono')
+                    // NO HAY withLivewire() AQUÍ. La lógica se moverá al ListAbonos.php
+                    ->action(function (Action $action) {
+                        // Esta acción simplemente abre el modal. La navegación
+                        // se gestiona por el componente de página ListAbonos.
+                    })
                     ->form(function ($record) {
+                        // Obtener el ID actual y buscar IDs anterior y siguiente
+                        $currentId = $record->id_abono;
+
+                        // Obtener todos los abonos con comprobantes para navegación
+                        $abonosIds = Abonos::whereHas('conceptosabonos', function ($query) {
+                            $query->where('foto_comprobante', '!=', null);
+                        })->orderBy('fecha_pago', 'desc')
+                            ->pluck('id_abono')
+                            ->toArray();
+
+                        $currentIndex = array_search($currentId, $abonosIds);
+                        // Asegúrate de pasar 'null' como cadena para JavaScript si el ID es nulo
+                        $anteriorId = $currentIndex > 0 ? $abonosIds[$currentIndex - 1] : 'null';
+                        $siguienteId = isset($abonosIds[$currentIndex + 1]) ? $abonosIds[$currentIndex + 1] : 'null';
+
                         $comprobante = $record->conceptosabonos->firstWhere('foto_comprobante', '!=', null);
                         
                         // Información compacta en 3 columnas
@@ -254,39 +269,73 @@ public static function table(Table $table): Table
                             </div>
                         HTML;
 
+                        // Botones de navegación - **¡Emitiendo evento a Livewire!**
+                        $anteriorDisabledAttribute = $anteriorId === 'null' ? 'disabled' : '';
+                        $siguienteDisabledAttribute = $siguienteId === 'null' ? 'disabled' : '';
+                        
+                        // Pre-calcular el contenido del span para evitar errores de sintaxis
+                        $posicionTexto = "Comprobante " . ($currentIndex + 1) . " de " . count($abonosIds);
+
+                        $navegacionHtml = <<<HTML
+                            <div class="flex justify-between items-center mb-2">
+                                <button
+                                    type="button"
+                                    // Livewire.emit dispara un evento que el componente de la página ListAbonos escuchará
+                                    onclick="Livewire.emit('goToActionRecord', '{$anteriorId}');"
+                                    class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm rounded-md"
+                                    {$anteriorDisabledAttribute}
+                                >
+                                    ◀ Anterior
+                                </button>
+                                <span class="text-sm text-gray-500">{$posicionTexto}</span>
+                                <button
+                                    type="button"
+                                    // Livewire.emit dispara un evento que el componente de la página ListAbonos escuchará
+                                    onclick="Livewire.emit('goToActionRecord', '{$siguienteId}');"
+                                    class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm rounded-md"
+                                    {$siguienteDisabledAttribute}
+                                >
+                                    Siguiente ▶
+                                </button>
+                            </div>
+                        HTML;
+
                         $components = [
-                            \Filament\Forms\Components\Card::make()
+                            Forms\Components\Card::make()
                                 ->schema([
-                                    \Filament\Forms\Components\Placeholder::make('info')
-                                        ->content(new \Illuminate\Support\HtmlString($infoHtml))
+                                    Forms\Components\Placeholder::make('navegacion')
+                                        ->content(new HtmlString($navegacionHtml))
+                                        ->disableLabel(),
+                                    Forms\Components\Placeholder::make('info')
+                                        ->content(new HtmlString($infoHtml))
                                         ->disableLabel()
                                 ])
-                                ->columnSpanFull()
+                                ->columnSpanFull(),
                         ];
 
                         // Comprobante más compacto si existe
                         if ($comprobante && $comprobante->foto_comprobante) {
-                            $imageUrl = asset('storage/'.$comprobante->foto_comprobante);
+                            $imageUrl = asset('storage/' . $comprobante->foto_comprobante);
                             $comprobanteHtml = <<<HTML
                                 <div class="space-y-1 p-2">
                                     <p class="text-xs font-medium text-gray-500">Comprobante</p>
                                     <div class="flex justify-center">
-                                        <img src="$imageUrl" 
+                                        <img src="$imageUrl"
                                             class="rounded-lg max-h-[290px] max-w-full object-contain cursor-pointer"
                                             onclick="window.open(this.src, '_blank')">
                                     </div>
                                 </div>
                             HTML;
 
-                            $components[] = \Filament\Forms\Components\Card::make()
+                            $components[] = Forms\Components\Card::make()
                                 ->schema([
-                                    \Filament\Forms\Components\Placeholder::make('comprobante')
-                                        ->content(new \Illuminate\Support\HtmlString($comprobanteHtml))
+                                    Forms\Components\Placeholder::make('comprobante')
+                                        ->content(new HtmlString($comprobanteHtml))
                                         ->disableLabel()
                                 ])
                                 ->columnSpanFull();
                         } else {
-                            $components[] = \Filament\Forms\Components\Placeholder::make('no_comprobante')
+                            $components[] = Forms\Components\Placeholder::make('no_comprobante')
                                 ->content('No hay comprobante disponible')
                                 ->disableLabel();
                         }

@@ -5,17 +5,19 @@ namespace App\Filament\Resources\AbonosResource\Pages;
 use App\Filament\Resources\AbonosResource;
 use App\Models\Clientes;
 use App\Models\Creditos;
+use App\Models\Abonos; 
 use Filament\Pages\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
 use Carbon\Carbon;
+use Livewire\Component as LivewireComponent; // Importa LivewireComponent para tipado
 
 class ListAbonos extends ListRecords
 {
     protected static string $resource = AbonosResource::class;
 
-    public ?int $clienteId = null;
+    public int|string|null $clienteId = null;
     public ?string $fechaDesde = null;
     public ?string $fechaHasta = null;
     public string $periodoSeleccionado = 'hoy'; // Cambiado a 'hoy' por defecto
@@ -24,8 +26,11 @@ class ListAbonos extends ListRecords
         'clienteId' => ['except' => null],
         'fechaDesde' => ['except' => null],
         'fechaHasta' => ['except' => null],
-        'periodoSeleccionado' => ['except' => 'hoy'], // Cambiado a 'hoy' por defecto
+        'periodoSeleccionado' => ['except' => 'hoy'], 
     ];
+
+    // 'goToActionRecord' es el evento emitido desde los botones del modal.
+    protected $listeners = ['goToActionRecord'];
 
     public function mount(): void
     {
@@ -164,5 +169,25 @@ class ListAbonos extends ListRecords
     protected function shouldPersistTableFiltersInSession(): bool
     {
         return true;
+    }
+
+    /**
+     * Listener para el evento 'goToActionRecord' emitido por los botones de navegación del modal.
+     * Este método se define en el componente de página (ListAbonos) porque es el componente padre
+     * que controla el modal de la acción de tabla.
+     * @param string|int|null $abonoId El ID del abono al que navegar.
+     */
+    public function goToActionRecord(?string $abonoId): void
+    {
+        if ($abonoId === 'null' || !is_numeric($abonoId)) {
+            return;
+        }
+
+        $newRecord = Abonos::find((int) $abonoId);
+        
+        if ($newRecord) {
+           
+            $this->mountedTableActionRecord = $newRecord->getKey();
+        }
     }
 }

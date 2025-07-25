@@ -116,6 +116,7 @@ return array(
     'App\\Http\\Controllers\\RoadMap\\DataController' => $baseDir . '/app/Http/Controllers/RoadMap/DataController.php',
     'App\\Http\\Controllers\\RutaController' => $baseDir . '/app/Http/Controllers/RutaController.php',
     'App\\Http\\Kernel' => $baseDir . '/app/Http/Kernel.php',
+    'App\\Http\\Livewire\\CustomSelectModal' => $baseDir . '/app/Http/Livewire/CustomSelectModal.php',
     'App\\Http\\Livewire\\Profile' => $baseDir . '/app/Http/Livewire/Profile.php',
     'App\\Http\\Livewire\\RoadMap\\EpicForm' => $baseDir . '/app/Http/Livewire/RoadMap/EpicForm.php',
     'App\\Http\\Livewire\\RoadMap\\IssueForm' => $baseDir . '/app/Http/Livewire/RoadMap/IssueForm.php',
