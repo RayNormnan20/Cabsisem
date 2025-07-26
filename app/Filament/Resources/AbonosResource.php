@@ -221,19 +221,42 @@ public static function table(Table $table): Table
                         // Esta acción simplemente abre el modal. La navegación
                         // se gestiona por el componente de página ListAbonos.
                     })
-                    ->form(function ($record) {
+                    // El método form() ahora recibe la instancia $livewire del componente padre (ListAbonos)
+                    // y los $arguments que le pasamos desde el ListAbonos.php
+                    ->form(function ($record, $livewire) { // <--- ¡Importante: $livewire se pasa aquí!
+                        // Obtener los filtros actuales de la página ListAbonos a través del objeto $livewire
+                        $clienteIdFromLivewire = $livewire->clienteId;
+                        $fechaDesdeFromLivewire = $livewire->fechaDesde;
+                        $fechaHastaFromLivewire = $livewire->fechaHasta;
+
                         // Obtener el ID actual y buscar IDs anterior y siguiente
                         $currentId = $record->id_abono;
 
-                        // Obtener todos los abonos con comprobantes para navegación
-                        $abonosIds = Abonos::whereHas('conceptosabonos', function ($query) {
-                            $query->where('foto_comprobante', '!=', null);
-                        })->orderBy('fecha_pago', 'desc')
-                            ->pluck('id_abono')
-                            ->toArray();
+                        // **FILTRAR LA CONSULTA PARA abonosIds CON LOS FILTROS OBTENIDOS**
+                        $abonosQuery = Abonos::query()
+                            ->whereHas('conceptosabonos', function ($query) {
+                                $query->where('foto_comprobante', '!=', null);
+                            });
+
+                        if (!empty($clienteIdFromLivewire)) {
+                            $abonosQuery->where('id_cliente', $clienteIdFromLivewire);
+                        }
+                        if (!empty($fechaDesdeFromLivewire)) {
+                            $abonosQuery->whereDate('fecha_pago', '>=', $fechaDesdeFromLivewire);
+                        }
+                        if (!empty($fechaHastaFromLivewire)) {
+                            $abonosQuery->whereDate('fecha_pago', '<=', $fechaHastaFromLivewire);
+                        } else {
+                            // Si no hay filtros de fecha explícitos, aplicar el filtro de "hoy" por defecto,
+                            // igual que en la tabla principal cuando no se eligen fechas.
+                            $abonosQuery->whereDate('fecha_pago', \Carbon\Carbon::today()->format('Y-m-d'));
+                        }
+                        
+                        $abonosQuery->orderBy('fecha_pago', 'desc');
+
+                        $abonosIds = $abonosQuery->pluck('id_abono')->toArray();
 
                         $currentIndex = array_search($currentId, $abonosIds);
-                        // Asegúrate de pasar 'null' como cadena para JavaScript si el ID es nulo
                         $anteriorId = $currentIndex > 0 ? $abonosIds[$currentIndex - 1] : 'null';
                         $siguienteId = isset($abonosIds[$currentIndex + 1]) ? $abonosIds[$currentIndex + 1] : 'null';
 
@@ -276,12 +299,20 @@ public static function table(Table $table): Table
                         // Pre-calcular el contenido del span para evitar errores de sintaxis
                         $posicionTexto = "Comprobante " . ($currentIndex + 1) . " de " . count($abonosIds);
 
+                        // Codificamos los filtros que el MODAL está usando actualmente (que provienen de ListAbonos)
+                        // para pasarlos al evento Livewire 'goToActionRecord'.
+                        $filtersJsonForNextPrev = htmlspecialchars(json_encode([
+                            'clienteId' => $clienteIdFromLivewire,
+                            'fechaDesde' => $fechaDesdeFromLivewire,
+                            'fechaHasta' => $fechaHastaFromLivewire
+                        ]), ENT_QUOTES, 'UTF-8');
+
                         $navegacionHtml = <<<HTML
                             <div class="flex justify-between items-center mb-2">
                                 <button
                                     type="button"
                                     // Livewire.emit dispara un evento que el componente de la página ListAbonos escuchará
-                                    onclick="Livewire.emit('goToActionRecord', '{$anteriorId}');"
+                                    onclick="Livewire.emit('goToActionRecord', '{$anteriorId}', {$filtersJsonForNextPrev});"
                                     class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm rounded-md"
                                     {$anteriorDisabledAttribute}
                                 >
@@ -291,7 +322,7 @@ public static function table(Table $table): Table
                                 <button
                                     type="button"
                                     // Livewire.emit dispara un evento que el componente de la página ListAbonos escuchará
-                                    onclick="Livewire.emit('goToActionRecord', '{$siguienteId}');"
+                                    onclick="Livewire.emit('goToActionRecord', '{$siguienteId}', {$filtersJsonForNextPrev});"
                                     class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-sm rounded-md"
                                     {$siguienteDisabledAttribute}
                                 >
